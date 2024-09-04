@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost','eybuzz-ggdwdvafa0gcc0hy.centralindia-
 
 
 
-SECURE_SSL_REDIRECT = False
+SECURE_SSL_REDIRECT = True
 # Application definition
 
 INSTALLED_APPS = [

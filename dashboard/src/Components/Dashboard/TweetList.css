@@ -1,0 +1,99 @@
+.tweet-list-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f0f2f5;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.title {
+    font-size: 28px;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #333;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.form-label {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.dropdown {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.dropdown:focus {
+    border-color: #0056b3;
+}
+
+.submit-button {
+    padding: 12px 25px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.submit-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.tweet-details {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.details-title {
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.details-card {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.details-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    color: #555;
+}
+
+.details-label {
+    font-weight: bold;
+}
+
+.details-value {
+    color: #007bff;
+}

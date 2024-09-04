@@ -1,0 +1,250 @@
+/* DashboardPage.css
+
+.login-container {
+    display: flex;
+    height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  .login-left {
+    flex: 1;
+    background-color: #222222;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+  }
+  
+  .logo {
+    height: 50px;
+    margin-bottom: 20px;
+  }
+  
+  .welcome-text {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .login-right {
+    flex: 1;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .login-form {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+  }
+  
+  .sign-in-text {
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  .login-btn {
+    background-color: #ffc107;
+    color: #000000;
+  }
+  
+  .or-sign-in-with {
+    text-align: center;
+    margin: 20px 0;
+  }
+  
+  .social-login-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .social-btn {
+    flex: 1;
+  }
+   */
+
+   /* LoginStyle.css */
+   .container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .left-section {
+    background-color: #262B3B;
+    color: #F4B400;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: left;
+    width: 50%;
+    padding: 0 20px;
+    /* margin-left: 10%; */
+  }
+  .left-content{
+    margin-left: 20%;
+  }
+  .object1{
+    position: relative;
+    margin-top: 100%;
+    margin-left: -30%;
+    padding-top: 200px;
+    width: 70%;
+  }
+  
+  .right-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 30%;
+    margin-top: 5%;
+    margin-right: 15%;
+    
+  }
+  
+  .logo {
+    position: relative;
+    margin-left: 8%;
+    margin-bottom: 5px;
+    width: 15%;
+  }
+  
+  .title {
+    font-size: 80px;
+    font-weight: 800;
+    /* margin-bottom: 10px; */
+  }
+  .welcome{
+    font-size: 60px;
+    font-weight: 500;
+    margin-bottom: -25px;
+  }
+  .subtitle {
+    font-size: 12px;
+    margin-left: 8%;
+    margin-bottom: 15px;
+    color: #f5f5f5;
+  }
+  
+  .login-container {
+    margin-top: 25%;
+    width: 100%;
+    max-width: 400px;
+    height: 80%;
+  }
+  
+  .signin-title {
+    margin: 20px;
+  }
+  
+  .text-field {
+    margin-bottom: 20px;
+  }
+  
+  .login-btn {
+    width: 100%;
+    background-color: #F4B400;
+    color: white;
+    font-weight: bold;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .social-login {
+    margin-top: 5%;
+    display: flex;
+    justify-content: space-between;
+    /* height: 0%; */
+  }
+  .login-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 20px 0;
+  }
+  
+  .separator-line {
+    flex: 1;
+    border-bottom: 1px solid #ccc;
+    margin: 0 10px;
+  }
+  
+  .or-text {
+    white-space: nowrap;
+    color: #ccc;
+  }
+  
+  .social-icon {
+    margin-left: -8px;
+  }
+
+  /* css for input base */
+  .custom-input {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+.custom-input:focus {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+.input-base {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    /* border: 1px solid #ccc; */
+    outline: none;
+}
+/* .input-base:focus {
+    border-color: #3f51b5;
+    outline: none;
+} */
+ .sub-text{
+    color: #ccc;
+    font-size: small;
+ }
+ .social-box {
+  border: 0.5px solid #ccc;
+  /* width: 25%; */
+  border-radius: 15%;
+  padding: 10px 20px;
+  box-shadow: 0 4px 8px rgba(0 0 0 0.2); /* Adjust shadow as needed */
+  width: 10%;
+  height: 10%;
+}
+.button-animation {
+  animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+      transform: scale(1);
+  }
+  50% {
+      transform: scale(1.1);
+  }
+  100% {
+      transform: scale(1);
+  }
+}
+
+.error-message {
+  color: red;
+  font-size: 0.875rem; /* Adjust as necessary */
+  margin-top: 0.5rem; /* Adjust as necessary */
+}

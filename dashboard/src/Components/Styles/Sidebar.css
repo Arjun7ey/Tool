@@ -1,0 +1,91 @@
+/* Sidebar container */
+.sidebar {
+  width: 60px; /* Default width to fit only icons */
+  height: 100vh;
+  background-color: #262b3b;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  transition: width 0.3s ease-in-out;
+  overflow-x: hidden;
+  z-index: 100;
+}
+
+.sidebar.expanded {
+  width: 220px; /* Expanded width to fit icons and full text */
+}
+
+/* Sidebar logo */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 0;
+  background-color: #1f2533;
+}
+
+.sidebar-logo .logo {
+  width: 40px; /* Adjust the size as needed */
+  height: auto;
+}
+
+/* Sidebar navigation */
+.sidebar-nav {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 20px;
+}
+
+/* Sidebar item */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  width: 100%;
+  color: #fff;
+  text-decoration: none;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.sidebar-item:hover {
+  background-color: #3b4253;
+  color: #ffc107;
+}
+
+.sidebar-item.active {
+  background-color: #ffc107;
+  color: #262b3b;
+}
+
+/* Sidebar icon */
+.sidebar-icon {
+  font-size: 24px;
+  min-width: 60px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Sidebar text */
+.sidebar-text {
+  font-size: 16px;
+  margin-left: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: none;
+}
+
+/* Show text when expanded */
+.sidebar.expanded .sidebar-text {
+  display: inline-block;
+  opacity: 1;
+}
+
+/* Hide text when not expanded */
+.sidebar:not(.expanded) .sidebar-text {
+  display: none;
+}

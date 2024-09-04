@@ -1,0 +1,124 @@
+.header-box {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1100;
+  height: 80px; /* Adjust the height as needed */
+  overflow: hidden; /* Prevent unwanted scrollbars within the header */
+}
+
+.header-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%; /* Ensure the toolbar takes the full height of the header */
+  padding: 0 16px; /* Adjust padding as needed */
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  padding-left: 38%;
+}
+
+.header-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.header-profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 16px;
+}
+
+.header-avatar {
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.header-profile-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 8px;
+}
+
+.header-profile-role {
+  font-size: 0.75rem;
+  color: gray;
+}
+
+.header-profile-name {
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.header-dropdown-icon {
+  margin-left: 4px;
+  color: black;
+}
+
+.settings-icon-rotate {
+  transition: transform 0.5s ease;
+}
+
+.settings-icon:hover .settings-icon-rotate {
+  transform: rotate(360deg);
+}
+
+.no-hover {
+  pointer-events: none;
+}
+
+.no-hover * {
+  pointer-events: auto;
+}
+
+.notifi-icon:hover {
+  animation: shake 0.5s;
+  animation-iteration-count: infinite;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+@media (max-width: 600px) {
+  .header-right {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .header-right > * {
+    margin: 4px 0;
+  }
+
+  .header-right .MuiIconButton-root {
+    margin-right: 0;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 960px) {
+  .header-right {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .header-right > * {
+    margin: 0 8px;
+  }
+}
+
+@media (min-width: 960px) {
+  .header-right {
+    align-items: center;
+  }
+}

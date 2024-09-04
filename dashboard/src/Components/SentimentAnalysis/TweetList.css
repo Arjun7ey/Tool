@@ -1,0 +1,246 @@
+.tweet-list-container {
+    display: flex;
+    height: 200%;
+}
+
+.sidebar {
+    width: 45%;
+    padding: 20px;
+    border-right: 2px solid #ddd;
+}
+
+.search-form, .form {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333; /* Set the label color to a dark shade */
+    font-size: 16px; /* Increase the font size for better visibility */
+}
+
+.search-input, .dropdown {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.search-button, .submit-button, .show-trends-button, .post-to-twitter-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #FFE600;
+    color: #262b3b;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.search-button:hover, .submit-button:hover, .show-trends-button:hover, .post-to-twitter-button:hover {
+    background-color: #b8860b;
+}
+
+.main-content {
+    width: 75%;
+    padding: 20px;
+}
+
+.details-card, .result-card, .tweet-details, .trends {
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+
+.details-title, .results-title, .trends-title {
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.result-header, .result-footer, .dialog-content {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.result-profile-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.result-user-info {
+    flex: 1;
+}
+
+.result-user-name, .result-user-handle {
+    display: block;
+}
+
+.result-text {
+    margin: 10px 0;
+}
+
+.result-media {
+    margin: 10px 0;
+}
+
+.result-media-image {
+    max-width: 100%;
+    height: auto;
+}
+
+.images-preview {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.image-preview {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: border 0.3s;
+}
+
+.image-preview.selected {
+    border-color: #007bff;
+}
+
+.trends-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.trend-item {
+    margin-bottom: 10px;
+}
+
+.trend-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #28a745;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.trend-button:hover {
+    background-color: #218838;
+}
+
+.post-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+    padding: 20px;
+    background-color: #fff;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-title {
+    margin-bottom: 20px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.post-button, .close-dialog-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.post-button {
+    background-color: #0056b3;
+    color: #fff;
+}
+
+.post-button:hover {
+    background-color: #0056b3;
+}
+
+.close-dialog-button {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.close-dialog-button:hover {
+    background-color: #c82333;
+}
+
+.title {
+    font-size: 28px; /* Increase font size */
+    font-weight: bold; /* Make the text bold */
+    color: #000; /* Set the color to black */
+    margin-bottom: 20px; /* Add some space below the title */
+    text-align: center; /* Center the text */
+    padding: 10px; /* Add some padding around the text */
+    background-color: #f9f9f9; /* Add a light background color */
+    border-radius: 5px; /* Add rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+}
+.trends-dropdown {
+    margin-bottom: 20px;
+}
+
+.trends-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 16px;
+}
+
+.trends-select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #333;
+    appearance: none; /* Removes the default dropdown arrow */
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0ibm9uZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KPHBhdGggc3Ryb2tlPSIjNzU3NTc1IiBzdHJva2Utd2lkdGg9IjEuNSIgZD0iTTEyIDYgOC4wMDEgMTAgNCA2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cg==');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.trends-select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.trends-select:hover {
+    border-color: #0056b3;
+}
+

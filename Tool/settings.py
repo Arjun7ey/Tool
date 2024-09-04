@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'django_extensions',
+    'sslserver',
     'channels',
 ]
 

@@ -28,8 +28,8 @@ SECRET_KEY = 'django-insecure-_*oiwy*))jpc80c)+##dskt6kqb))5r*sk&#f#dd)!jjg%zo=!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-ALLOWED_HOSTS = ['eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net']
+
 
 
 SECURE_SSL_REDIRECT = False

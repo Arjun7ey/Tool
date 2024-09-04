@@ -299,7 +299,7 @@ const VideoTable = () => {
                 const tasksResponse = await axiosInstance.get('api/videos/dashboard/');
                 const categoriesResponse = await axiosInstance.get('/api/categories/');
                 const departmentsResponse = await axiosInstance.get('/api/department-userwise/');
-
+                console.log(tasksResponse.data)
                 setTasks(tasksResponse.data);
                 setCategories(categoriesResponse.data);
                 setDepartments(departmentsResponse.data);

@@ -1,0 +1,344 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.task-table {
+  overflow-x: auto; /* Allows horizontal scroll for table if needed */
+}
+
+.task-table table {
+  width: 100%;
+  border-collapse: collapse; /* Ensures borders collapse into single lines */
+  table-layout: fixed; /* Ensures consistent column widths */
+}
+
+.task-table th, .task-table td {
+  padding: 12px 15px;
+  border: 1px solid #ddd; /* Light border around cells */
+  text-align: center; /* Centers text in both headers and cells */
+}
+
+.task-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  white-space: nowrap; /* Prevents wrapping in table headers */
+}
+
+.task-table tr:hover {
+  background-color: #f1f1f1;
+  cursor: pointer;
+}
+
+.dropdown-container {
+  width: 20%;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-label {
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.dropdown-select {
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 25px;
+  background-color: #f8f8f8;
+  font-size: 16px;
+  color: #333;
+  transition: border-color 0.3s;
+}
+
+.dropdown-select:hover,
+.dropdown-select:focus {
+  border-color: #0ea5e9;
+}
+
+.selected-option {
+  margin-top: 10px;
+  font-style: italic;
+  color: #a02d2d;
+}
+
+.image-grid {
+  margin-top: 20px;
+}
+
+.grid-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.grid-item {
+  width: calc(25% - 16px); /* Adjust based on the desired number of columns */
+  position: relative;
+}
+
+.grid-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.table-column-id,
+.table-column-submitted-by,
+.table-column-submitted-on,
+.table-column-image,
+.table-column-category,
+.table-column-status,
+.table-column-rating {
+  text-align: center; /* Centers text in the columns */
+}
+
+.table-column-id {
+  width: 5%;
+}
+
+.table-column-submitted-by {
+  width: 20%; /* Adjust width to prevent wrapping */
+  white-space: nowrap; /* Prevents text wrapping */
+}
+
+.table-column-submitted-on {
+  width: 15%;
+}
+
+.table-column-image {
+  width: 20%;
+}
+
+.table-column-category {
+  width: 15%;
+}
+
+.table-column-status {
+  width: 10%;
+}
+
+.table-column-rating {
+  width: 15%;
+}
+
+.carousel-container {
+  max-width: 100%; /* Adjust as needed */
+  margin: 0 auto;
+  overflow-x: auto; /* Enable horizontal scrolling */
+  overflow-y: hidden; /* Hide vertical scrollbar */
+  white-space: nowrap; /* Prevent wrapping of carousel items */
+  position: relative; /* Ensure scrollbar position relative to the container */
+}
+
+.carousel-container::-webkit-scrollbar {
+  height: 12px;
+}
+
+.carousel-container::-webkit-scrollbar-thumb {
+  background: #888; /* Color of the scroll thumb */
+  border-radius: 6px;
+}
+
+.carousel-container::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Color when hovering over the scroll thumb */
+}
+
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.button-height {
+  height: 2%; /* Modify height as needed */
+}
+
+.task-card {
+  position: relative;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.task-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+}
+
+/* TaskTable.css */
+.styled-table {
+  border-collapse: separate; /* Change to separate to add vertical lines */
+  border-spacing: 0; /* Ensure there is no extra spacing between cells */
+  width: 100%;
+  margin: 25px 0;
+  font-size: 0.9em;
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-width: 400px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Softer shadow for a modern look */
+  border-radius: 8px; /* Rounded corners */
+  overflow: hidden; /* Ensure that the rounded corners apply to the content */
+}
+
+.styled-table thead tr {
+  background-color: #262b3b;
+  color: #ffffff;
+  text-align: center;
+}
+
+.styled-table th,
+.styled-table td {
+  padding: 12px 15px;
+  text-align: center; /* Ensure consistent alignment */
+  border-right: 1px solid #ddd; /* Add right border for vertical lines */
+  border-bottom: 1px solid #ddd; /* Ensure consistent bottom border */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effects */
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.styled-table th {
+  white-space: nowrap; /* Prevents header text from wrapping */
+  border-left: 0; /* Ensure no left border for header cells */
+  font-weight: 600; /* Slightly bolder font for headers */
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.styled-table tbody tr {
+  border-bottom: 1px solid #ddd; /* Ensure consistent row border */
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+  background-color: #f9f9f9; /* Light gray background for even rows */
+}
+
+.styled-table tbody tr:last-of-type {
+  border-bottom: 2px solid #f4b400; /* Custom border color for last row */
+}
+
+.styled-table tbody tr.active-row {
+  font-weight: bold;
+  color: #f4b400;
+  background-color: #f7f7f7; /* Highlight active row */
+}
+
+.styled-table tbody td:last-child {
+  border-right: 0; /* Remove right border for last cell */
+  width: 150px; /* Adjust this value as needed */
+  padding: 10px; /* Adjust this value if necessary */
+  min-width: 120px; /* Adjust this value as needed */
+}
+
+.styled-table tbody tr td,
+.styled-table thead th {
+  border-left: 0; /* Remove left border for first column */
+  border-right: 1px solid #ddd; /* Ensure right border for consistency */
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.styled-table tbody tr:hover td {
+  background-color: #e0e0e0; /* Hover effect for rows */
+}
+
+.styled-table thead th:hover {
+  background-color: #333a4b; /* Darker shade on hover */
+}
+.styled-table * {
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.edit-icon {
+  color: #0ea5e9;
+}
+
+.delete-icon {
+  color: #a02d2d;
+}
+
+.visibility-icon {
+  color: #f4b400;
+}
+
+.task-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  padding: 20px;
+  gap: 16px;
+}
+
+.title-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  background-color: #262b3b;
+  margin-bottom: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.title-text {
+  font-size: 24px;
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: bold;
+  color: #f4b400;
+  text-align: center;
+  z-index: 1; /* Keep text above the animation */
+}
+
+.title-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 300%; /* Increase size for ripple effect */
+  height: 100%;
+  background: radial-gradient(circle, rgba(244, 180, 0, 0.4) 0%, rgba(244, 180, 0, 0) 70%);
+  animation: ripple 4s infinite;
+  z-index: 0; /* Place the animation behind the text */
+}
+.table-column-id,
+.table-column-submitted-by,
+.table-column-submitted-on,
+.table-column-image,
+.table-column-category,
+.table-column-status,
+.table-column-rating {
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.styled-table, 
+.styled-table th, 
+.styled-table td, 
+.styled-table tbody tr,
+.styled-table tbody tr td {
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+@keyframes ripple {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 0;
+  }
+  100% {
+    left: 100%;
+  }
+}
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  background-color: transparent;
+  cursor: col-resize;
+}
+
+.resize-handle:hover {
+  background-color: #f0f0f0;
+}

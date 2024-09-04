@@ -1,0 +1,27 @@
+.icon-button {
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.icon-button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+}
+
+.icon {
+    width: 24px;
+    height: 24px;
+}
+
+.visibility-icon {
+    color: #007bff;
+}
+
+.edit-icon {
+    color: #ffc107;
+}
+
+.delete-icon {
+    color: #dc3545;
+}

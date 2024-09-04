@@ -1,0 +1,202 @@
+/* Ensure the container is adjusted to fit within the header and sidebar */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.App {
+  font-family: sans-serif;
+  text-align: center;
+  background-color: #f4f1f0;
+}
+
+.header-item {
+  padding: 20px;
+  text-align: left;
+  background-color: #f6f5f4;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0.8;
+}
+
+.icon {
+  font-size: 40px;
+  color: #2196f3;
+  transition: transform 0.3s ease;
+}
+
+.value {
+  color: #ff7043;
+}
+
+.revenue-updates, .yearly-breakup, .monthly-earnings {
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+}
+
+.chart {
+  margin-top: 20px;
+}
+
+button {
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .header-item {
+    padding: 12px;
+  }
+
+  .icon {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .revenue-updates, .yearly-breakup, .monthly-earnings {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 900px) {
+  .header-item {
+    padding: 14px;
+  }
+
+  .icon {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@keyframes rotate3D {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+.styled-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin: 25px 0;
+  font-size: 0.9em;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.styled-table thead tr {
+  background-color: #262b3b;
+  color: #ffffff;
+  text-align: center;
+}
+
+.styled-table th, .styled-table td {
+  padding: 12px 15px;
+  text-align: center;
+  border-right: 1px solid #ddd;
+}
+
+.styled-table th {
+  white-space: nowrap;
+}
+
+.styled-table tbody tr {
+  border-bottom: 1px solid #ddd;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+.styled-table tbody tr:last-of-type {
+  border-bottom: 2px solid #f4b400;
+}
+
+.styled-table tbody tr.active-row {
+  font-weight: bold;
+  color: #f4b400;
+}
+
+.styled-table tbody tr td:last-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.styled-table tbody tr td, .styled-table thead th {
+  border-left: none;
+}
+
+.edit-icon {
+  color: #0ea5e9;
+}
+
+.delete-icon {
+  color: #a02d2d;
+}
+
+.visibility-icon {
+  color: #f4b400;
+}
+
+.task-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  padding: 20px;
+  gap: 16px;
+}
+
+.title-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  background-color: #262b3b;
+  margin-bottom: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.title-text {
+  font-size: 24px;
+  font-family: 'Arial, sans-serif';
+  font-weight: bold;
+  color: #f4b400;
+  text-align: center;
+  z-index: 1;
+}
+
+.title-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 300%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(244, 180, 0, 0.4) 0%, rgba(244, 180, 0, 0) 70%);
+  animation: ripple 4s infinite;
+  z-index: 0;
+}
+
+@keyframes ripple {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 0;
+  }
+  100% {
+    left: 100%;
+  }
+}

@@ -1,0 +1,61 @@
+/* Ensure the container is adjusted to fit within the header and sidebar */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  height: 100%;
+}
+
+/* Main container */
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0; /* Remove default margin */
+}
+
+/* Sidebar styles */
+.sidebar-container {
+  width: 180px; /* Adjust based on your desired sidebar width */
+  background-color: #262b3b; /* Sidebar color */
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  box-sizing: border-box; /* Include padding in width/height calculations */
+  z-index: 1000; /* Ensure it is on top */
+}
+
+/* Header styles */
+.header-box {
+  position: fixed;
+  width: calc(100% - 180px); /* 100% minus the sidebar width */
+  top: 0;
+  left: 180px; /* Align with the sidebar */
+  height: 80px; /* Adjust the height as needed */
+  background-color: white; /* Header background color */
+  box-sizing: border-box; /* Include padding and border in width/height calculations */
+  z-index: 1100; /* Ensure it is on top of the sidebar */
+}
+
+/* Main content styles */
+.main-content {
+  margin-left: 180px; /* Align content with the sidebar */
+  padding-top: 80px; /* Align content with the header */
+  padding-left: 20px;
+  padding-right: 20px;
+  background-color: #f4f1f0;
+  min-height: calc(100vh - 80px); /* Adjust height based on header */
+  box-sizing: border-box; /* Include padding in width/height calculations */
+}
+
+/* Remove any default margin or padding that might be affecting layout */
+.MuiContainer-root {
+  margin: 0 !important; /* Ensure no extra margin */
+  padding: 0 !important; /* Ensure no extra padding */
+  box-sizing: border-box !important; /* Include padding and border in width/height calculations */
+}

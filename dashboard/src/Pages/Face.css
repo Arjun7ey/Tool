@@ -1,0 +1,125 @@
+.face {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+}
+
+.face-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    background-color: #fddbb0; /* Skin color */
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.eyes-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100px;
+    position: relative;
+    top: 20px; /* Adjust as needed */
+}
+
+.eye {
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border: 2px solid #000;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Ensure pupils are contained */
+}
+
+.closed-eye {
+    background-color: #f2f2f2; /* Lighter color for closed eyes */
+}
+
+.eye-lid {
+    position: absolute;
+    width: 100%;
+    background-color: #000; /* Black color for eye lids */
+    transition: all 0.3s;
+}
+
+.upper-lid {
+    height: 15%; /* Thin lid */
+    border-radius: 0 0 50% 50%; /* Rounded bottom edges */
+    top: 0;
+}
+
+.lower-lid {
+    height: 15%; /* Thin lid */
+    border-radius: 50% 50% 0 0; /* Rounded top edges */
+    bottom: 0;
+}
+
+.upper-lid.closed-lid {
+    transform: translateY(-50%);
+}
+
+.lower-lid.closed-lid {
+    transform: translateY(50%);
+}
+
+.pupil {
+    width: 20px;
+    height: 20px;
+    background-color: #000;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.hidden-pupil {
+    opacity: 0; /* Hide pupil */
+}
+
+.eyebrow {
+    width: 80px;
+    height: 10px;
+    background-color: #5a3f29; /* Eyebrow color */
+    border-radius: 5px;
+    position: absolute;
+}
+
+.left-eyebrow {
+    top: 30px; /* Adjust as needed */
+    left: 25px; /* Adjust as needed */
+    transform: rotate(-15deg);
+}
+
+.right-eyebrow {
+    top: 30px; /* Adjust as needed */
+    right: 25px; /* Adjust as needed */
+    transform: rotate(15deg);
+}
+
+.nose {
+    width: 30px;
+    height: 30px;
+    background-color: #fbbf8f; /* Nose color */
+    border-radius: 50%;
+    position: relative;
+    top: 50px; /* Adjust as needed */
+}
+
+.mouth.happy-mouth {
+    width: 80px;
+    height: 40px;
+    border-bottom: 15px solid #fbbf8f; /* Mouth color */
+    border-radius: 50%;
+    position: relative;
+    top: 70px; /* Adjust as needed */
+    transform: rotate(0deg); /* Adjust for happy smile */
+}

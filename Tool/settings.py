@@ -29,6 +29,10 @@ SECRET_KEY = 'django-insecure-_*oiwy*))jpc80c)+##dskt6kqb))5r*sk&#f#dd)!jjg%zo=!
 DEBUG = False
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost','eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net']
+<<<<<<< HEAD
+=======
+
+>>>>>>> a75b7712e79db7d72337003b0ffaa56693d007ec
 
 
 SECURE_SSL_REDIRECT = False

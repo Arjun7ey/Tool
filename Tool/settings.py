@@ -188,7 +188,7 @@ CORS_ALLOW_HEADERS = [  'content-type',
 # Add the path to the React build directory
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'dashboard', 'dist'),
-    os.path.join(BASE_DIR, 'static'),
+    
 ]
 
 # Default primary key field type

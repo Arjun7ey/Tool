@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-_*oiwy*))jpc80c)+##dskt6kqb))5r*sk&#f#dd)!jjg%zo=!')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost','eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net']
 
@@ -91,7 +91,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'Tool.context_processors.vite_assets',
+                'upload.context_processors.vite_assets',
             ],
         },
     },

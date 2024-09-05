@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+import { BASE_URL } from '../../config';
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',  // Replace with your backend URL
+  baseURL: BASE_URL,  // Replace with your backend URL
   timeout: 5000,  // Timeout if API request takes longer than 5 seconds
 });
 

@@ -23,16 +23,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_*oiwy*))jpc80c)+##dskt6kqb))5r*sk&#f#dd)!jjg%zo=!'
+# SECRET_KEY = 'django-insecure-_*oiwy*))jpc80c)+##dskt6kqb))5r*sk&#f#dd)!jjg%zo=!'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-_*oiwy*))jpc80c)+##dskt6kqb))5r*sk&#f#dd)!jjg%zo=!')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost','eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net']
 
 
 
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = False
 # Application definition
 
 INSTALLED_APPS = [
@@ -51,10 +52,12 @@ INSTALLED_APPS = [
     'django_extensions',
     'sslserver',
     'channels',
+   'whitenoise.runserver_nostatic',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -70,6 +73,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:8000",
     "http://127.0.0.1:3000",
+    "https://eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net"
 ]
 
 ROOT_URLCONF = 'Tool.urls'
@@ -77,9 +81,8 @@ ROOT_URLCONF = 'Tool.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        #'DIRS': [BASE_DIR /  "templates"],
-        #'DIRS': [BASE_DIR / 'smtreact/build'],
-        'DIRS': [os.path.join(BASE_DIR, 'smtreact/build'),
+      
+        'DIRS': [
                 os.path.join(BASE_DIR, "templates") ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -88,6 +91,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'Tool.context_processors.vite_assets',
             ],
         },
     },
@@ -104,13 +108,13 @@ AUTHENTICATION_BACKENDS = (
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'smtdb',
-        'USER': 'postgres',
-        'PASSWORD': 'db@123',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'smtdb'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'db@123'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
-} 
+}
 SESSION_COOKIE_HTTPONLY = True  # Prevent client-side JavaScript access
 SESSION_COOKIE_SAMESITE = 'Lax'  # Adjust based on your needs
 
@@ -150,24 +154,25 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Additional directories to look for static files
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'smtreact/build/static'),
-    # Other directories if needed
+    os.path.join(BASE_DIR, 'dashboard', 'dist'),
 ]
-
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+VITE_APP_DIR = os.path.join(BASE_DIR, 'dashboard')
 
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000', 
-     'http://localhost:5173', # Add your frontend URL here
-    # Add more URLs as needed
+    'http://localhost:5173',
+    'https://eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net'
 ]
 # Optional: Allow all methods and headers for simplicity in development
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
@@ -179,10 +184,8 @@ CORS_ALLOW_HEADERS = [  'content-type',
 
 # Add the path to the React build directory
 STATICFILES_DIRS = [
-   # os.path.join(BASE_DIR, 'smtreact/build/static'),
-  
-   BASE_DIR / 'upload/static',
-   # BASE_DIR / 'smtreact/build',  # Include this to serve the manifest.json and other root files
+    os.path.join(BASE_DIR, 'dashboard', 'dist'),
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 # Default primary key field type
@@ -214,6 +217,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    'SIGNING_KEY': SECRET_KEY,
 
     # Add more options as needed
 }
@@ -226,20 +230,22 @@ LOGOUT_REDIRECT_URL = "user_logout"
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
-    'http://localhost:3000',  # Add your frontend URL here
+    'http://localhost:3000',
+    'https://eybuzz-ggdwdvafa0gcc0hy.centralindia-01.azurewebsites.net'
 ]
 CORS_ALLOW_CREDENTIALS = True
 
 TWITTER_API = {
-    'CONSUMER_KEY': 'VPMDvfn7A9rwpT3d5QBTcWXqL',
-    'CONSUMER_SECRET': 'CN3hNF4csVPEc5LSMxyysUTRlbcdL44e0rdTILlfz3OXhdTHt6',
-    'ACCESS_TOKEN': '1816341460905779200-JocZb5Lt5JCnGCKcO6XzpZqNgxFRh0',
-    'ACCESS_TOKEN_SECRET': 'oMsDUbr9HLMaxYYPweGx61fi36X31HQY1L4e2qQgLiVFB',
-    'BEARER_TOKEN': 'AAAAAAAAAAAAAAAAAAAAAOEWvAEAAAAAoTBMWdW%2BYtdpH7%2BVale9oCoArjI%3DMLxFy0FX0b2Dg2wy6GauAoZ5c9SvE1bpb8mqR3kgPhQwowqhVJ'
+    'CONSUMER_KEY': os.environ.get('TWITTER_CONSUMER_KEY', 'VPMDvfn7A9rwpT3d5QBTcWXqL'),
+    'CONSUMER_SECRET': os.environ.get('TWITTER_CONSUMER_SECRET', 'CN3hNF4csVPEc5LSMxyysUTRlbcdL44e0rdTILlfz3OXhdTHt6'),
+    'ACCESS_TOKEN': os.environ.get('TWITTER_ACCESS_TOKEN', '1816341460905779200-JocZb5Lt5JCnGCKcO6XzpZqNgxFRh0'),
+    'ACCESS_TOKEN_SECRET': os.environ.get('TWITTER_ACCESS_TOKEN_SECRET', 'oMsDUbr9HLMaxYYPweGx61fi36X31HQY1L4e2qQgLiVFB'),
+    'BEARER_TOKEN': os.environ.get('TWITTER_BEARER_TOKEN', 'AAAAAAAAAAAAAAAAAAAAAOEWvAEAAAAAoTBMWdW%2BYtdpH7%2BVale9oCoArjI%3DMLxFy0FX0b2Dg2wy6GauAoZ5c9SvE1bpb8mqR3kgPhQwowqhVJ')
 }
-INSTAGRAM_APP_ID = '362786126659721'
-INSTAGRAM_APP_SECRET = '66ddd19366a13d9b359e2854d668902b'
-INSTAGRAM_REDIRECT_URI = 'https://localhost:8000/api/instagram/callback/'
+INSTAGRAM_APP_ID = os.environ.get('INSTAGRAM_APP_ID', '362786126659721')
+INSTAGRAM_APP_SECRET = os.environ.get('INSTAGRAM_APP_SECRET', '66ddd19366a13d9b359e2854d668902b')
+INSTAGRAM_USERNAME = os.environ.get('INSTAGRAM_USERNAME', 'smtdemoteam')
+INSTAGRAM_PASSWORD = os.environ.get('INSTAGRAM_PASSWORD', 'Delhi@dot')
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
@@ -248,29 +254,43 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
         },
     },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
     'loggers': {
-        '': {
+        'django': {
             'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
         },
     },
 }
 
 INSTAGRAM_USERNAME = 'smtdemoteam'
 INSTAGRAM_PASSWORD = 'Delhi@dot'
-EDGE_DRIVER_PATH = r"C:\Users\XY262ED\OneDrive - EY\Desktop\Software\msedgedriver.exe"
+
 
 ASGI_APPLICATION = 'Tool.asgi.application'
 
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # Use Redis for production
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.environ.get('REDIS_HOST', 'localhost'), 6379)],
+        },
     },
 }
 
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_COOKIE_SECURE = True
 
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

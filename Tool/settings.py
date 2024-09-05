@@ -113,6 +113,9 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'db@123'),
         'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
 SESSION_COOKIE_HTTPONLY = True  # Prevent client-side JavaScript access
@@ -213,7 +216,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,
     
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': 'your-secret-key',  # Replace with your own secret key
+   
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
@@ -294,3 +297,11 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}

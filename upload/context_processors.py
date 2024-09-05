@@ -10,9 +10,11 @@ def vite_assets(request):
                 manifest = json.load(manifest_file)
             main_js = manifest.get('src/main.jsx', {}).get('file', '')
             return {
-                'vite_js': f'assets/{main_js}' if main_js else '',
-                'vite_css': '',  # Vite might be injecting CSS via JS, so there might not be a separate CSS file
-            }
+                 'vite_js': 'assets/main-B9Xa0I-Q.js',
+              'vite_css': 'assets/main-JrVD0wqw.css',
+    }
+
+
     except Exception as e:
         print(f"Error in vite_assets context processor: {e}")
     return {'vite_js': '', 'vite_css': ''}

@@ -14,6 +14,9 @@ from pathlib import Path
 from datetime import timedelta 
 from datetime import datetime
 import os
+from urllib.parse import urlparse
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 #BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -105,19 +108,55 @@ AUTHENTICATION_BACKENDS = (
 )
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'smtdb'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'db@123'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('DB_NAME', 'smtdb'),
+#         'USER': os.environ.get('DB_USER', 'postgres'),
+#         'PASSWORD': os.environ.get('DB_PASSWORD', 'db@123'),
+#         'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+#         'PORT': os.environ.get('DB_PORT', '5432'),
+#         'OPTIONS': {
+#             'sslmode': 'require',
+#         },
+#     }
+# }
+
+
+# Get the connection string from environment variable
+conn_str = os.environ.get('AZURE_POSTGRESQL_CONNECTIONSTRING', '')
+
+if conn_str:
+    # Parse the connection string for Azure
+    conn_parts = dict(item.split('=') for item in conn_str.split(';') if item)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': conn_parts.get('Database', 'eybuzz-database'),
+            'USER': conn_parts.get('User Id', 'pketrlrahv'),
+            'PASSWORD': conn_parts.get('Password', 'EZxYwVaPAGvn1RG$'),
+            'HOST': conn_parts.get('Server', 'eybuzz-server.postgres.database.azure.com'),
+            'PORT': '5432',
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
     }
-}
+else:
+    # Local development settings
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'smtdb',
+            'USER': 'postgres',
+            'PASSWORD': 'db@123',
+            'HOST': '127.0.0.1',
+            'PORT': '5432',
+        }
+    }
+
+
+
 SESSION_COOKIE_HTTPONLY = True  # Prevent client-side JavaScript access
 SESSION_COOKIE_SAMESITE = 'Lax'  # Adjust based on your needs
 

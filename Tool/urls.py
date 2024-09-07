@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from django.views.generic.base import TemplateView
-from upload.Views import ImageView, InstagramView , VideoView
+from upload.Views import ImageView , VideoView
 from upload.Views import DocumentView, SMAnalysisView
 from upload.Views import PostView, ChatView, TweetRapidView
 from upload.Views import UserView,NotificationView,LinkView,MoMView,SurveyView
@@ -192,7 +192,7 @@ urlpatterns =[
  
   # path('api/instagram/authorize/', InstagramView.InstagramAuthView.as_view(), name='instagram_authorize'),
    # path('api/instagram/callback/',InstagramView.InstagramCallbackView.as_view(), name='instagram_callback'),
-    path('api/instagram/post/', InstagramView.post_to_instagram, name='instagram_post'),
+   
 
 
    # path('tweet/<int:tweet_id>/', SMAnalysisView.get_tweet_data, name='get_tweet_data'),

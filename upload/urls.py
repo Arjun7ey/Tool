@@ -11,7 +11,7 @@ from .views import UserRegistrationView, UserLoginView, UserLogoutView , Useradm
 urlpatterns = [
    
     
-    path('login/', UserView.MyTokenObtainPairView.as_view(), name='login'),
+    path('login/', UserView.my_token_obtain_pair, name='login'),
   
 ]
 websocket_urlpatterns = [

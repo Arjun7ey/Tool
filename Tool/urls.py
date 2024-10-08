@@ -5,20 +5,21 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from django.views.generic.base import TemplateView
-from upload.Views import ImageView , VideoView
-from upload.Views import DocumentView, SMAnalysisView
+from upload.Views import ImageView , VideoView, TweetMapView
+from upload.Views import DocumentView, TicketViews
 from upload.Views import PostView, ChatView, TweetRapidView
 from upload.Views import UserView,NotificationView,LinkView,MoMView,SurveyView
 from upload.Views import CategoryView, LinkView, SingleContentView
 from upload.Views import DepartmentView, SocialMediaView
-from upload.views import index
+from upload.Views import ChatbotView
 from upload.Views.ImageView import ImageViewSet
 from upload.Views.ImageView import ImageDashboardView
 from upload.Views.DocumentView import DocumentDashboardView
 from upload.Views.PostView import PostDashboardView
 from upload.Views.ImageView import ImageStatsAPI    
 from upload.Views.UserView import  CustomTokenObtainPairView 
-from upload.Views.PostView import PostStatsAPI    
+from upload.Views.PostView import PostStatsAPI   
+from upload.Views import ModuleView 
 from upload.Views.DocumentView import DocumentStatsAPI    
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
@@ -37,26 +38,67 @@ mom_create = MoMView.MoMCreateViewSet.as_view({
 
 urlpatterns =[
    
-  re_path(r'^.*', TemplateView.as_view(template_name='index.html'), name='index'),
+  # re_path(r'^.*', TemplateView.as_view(template_name='index.html'), name='index'),
 
    # path('api/', include(router.urls)), 
    path('api/', include('upload.urls')),
-   
-   
+
+
+    path('api/chatbot/', ChatbotView.chatbot_message, name='chatbot_message'),
+    path('api/media-stats/', SingleContentView.MediaStatsView.as_view(), name='media-stats'),
+    path('api/media-status/', SingleContentView.media_status_view, name='media-status'),
+    path('api/event-media/', SingleContentView.approved_media, name='event_media'),
+
+ 
    path('api/search-tweets/', TweetRapidView.search_twitter, name='search_twitter'),
    path('api/fetch-tweet-details/<str:tweet_id>/', TweetRapidView.fetch_tweet_details, name='fetch_tweet_details'),
    path('api/fetch-trends/', TweetRapidView.fetch_trends, name='fetch_trends'),
-  # path('api/search-tweets-sentiment/', TweetRapidView.search_twitter_with_sentiment, name='search_tweets_sentiment'),
-    path('api/fetch-trends-sentiment/', TweetRapidView.analyze_sentiment, name='fetch_trends_sentiment'),
-  
+  #path('api/search-tweets-sentiment/', TweetRapidView.search_twitter_with_sentiment, name='search_tweets_sentiment'),
+   path('api/fetch-trends-sentiment/', TweetRapidView.analyze_sentiment, name='fetch_trends_sentiment'),
+   path('api/twitter-search/', TweetRapidView.TwitterSearchView.as_view(), name='twitter-search'),
+   path('api/twitter-sentiment/', TweetRapidView.TwitterSentimentView.as_view(), name='twitter-sentiment'),
+
+   path('api/twitter-media/', TweetRapidView.TwitterMediaView.as_view(), name='twitter-media'),
+   path('api/analyze-image/', TweetRapidView.analyze_image, name='analyze_image'),
+
+   path('api/locations/', TweetMapView.get_locations, name='get_locations'),
+
+
    path('api/get-description/', TweetRapidView.get_ai_description, name='get_ai_description'),
   
-   path('api/media-stats/', SingleContentView.MediaStatsView.as_view(), name='media-stats'),
-   path('api/tweets/', TweetRapidView.get_tweet_ids, name='get_tweet_ids'),
+    path('api/tweets/', TweetRapidView.get_tweet_ids, name='get_tweet_ids'),
    
-   
-   
-   
+
+
+
+   # Surveys
+    path('api/surveys/create/', SurveyView.CreateSurveyView.as_view(), name='create_survey'),
+    path('api/surveys/list/', SurveyView.ListSurveysView.as_view(), name='list_surveys'),
+    path('api/surveys/detail/<int:survey_id>/', SurveyView.SurveyDetailView.as_view(), name='survey_detail'),
+    path('api/surveys/respond/<int:survey_id>/', SurveyView.SaveResponseView.as_view(), name='save_response'),
+  
+  
+   #Tickets
+
+    path('api/tickets/', TicketViews.TicketListCreate.as_view(), name='ticket-list-create'),
+    path('api/tickets/<int:pk>/', TicketViews.TicketRetrieveUpdateDestroy.as_view(), name='ticket-detail'),
+    path('api/tickets/<int:pk>/assign/', TicketViews.TicketAssign.as_view(), name='ticket-assign'),
+    path('api/tickets/by-status/<str:status>/', TicketViews.TicketListByStatus.as_view(), name='tickets-by-status'),
+    path('api/tickets/by-priority/<str:priority>/', TicketViews.TicketListByPriority.as_view(), name='tickets-by-priority'),
+    path('api/tickets/assigned-to-me/', TicketViews.TicketAssignedToMe.as_view(), name='tickets-assigned-to-me'),
+    path('api/tickets/search/', TicketViews.TicketSearch.as_view(), name='ticket-search'),
+
+ 
+    path('api/ticket-updates/', TicketViews.TicketUpdateListCreate.as_view(), name='ticket-update-list-create'),
+    path('api/ticket-updates/<int:pk>/', TicketViews.TicketUpdateRetrieveUpdateDestroy.as_view(), name='ticket-update-detail'),
+
+  #Modules
+    path('api/emaildomainpermissions/', ModuleView.email_domain_permissions_list, name='email_domain_permissions_list'),
+    path('api/modules/', ModuleView.module_list, name='module_list'),
+    path('api/add-module/', ModuleView.add_module, name='add_module'),
+    path('api/remove-module/', ModuleView.remove_module, name='remove_module'),
+    path('api/user-modules/', ModuleView.user_modules,name='user_modules'),
+
    #Links
     path('api/link/dashboard/', LinkView.LinkDashboardView.as_view(), name='link-list'),
     path('api/link/dashboard/upload/', LinkView.LinkUploadView.as_view(), name='link-upload'),
@@ -161,11 +203,11 @@ urlpatterns =[
     path('api/events-list/<int:pk>/', EventRetrieveUpdateDestroyAPIView.as_view(), name='onlyevent-detail'),  
 
     #Survey
-    path('api/surveys/', SurveyView.SurveyListCreateAPIView.as_view(), name='survey-list'),
-    path('api/surveys/<int:pk>/', SurveyView.SurveyRetrieveUpdateDestroyAPIView.as_view(), name='survey-detail'),
-    path('api/surveys/create-with-questions/', SurveyView.SurveyCreateWithQuestionsAPIView.as_view(), name='survey-create-with-questions'),
-    path('api/surveys/<int:survey_id>/questions/', SurveyView.QuestionListCreateAPIView.as_view(), name='question-list-create'),
-    path('api/questions/<int:pk>/', SurveyView.QuestionRetrieveUpdateDestroyAPIView.as_view(), name='question-detail'),
+   # path('api/surveys/', SurveyView.SurveyListCreateAPIView.as_view(), name='survey-list'),
+  #  path('api/surveys/<int:pk>/', SurveyView.SurveyRetrieveUpdateDestroyAPIView.as_view(), name='survey-detail'),
+   # path('api/surveys/create-with-questions/', SurveyView.SurveyCreateWithQuestionsAPIView.as_view(), name='survey-create-with-questions'),
+   # path('api/surveys/<int:survey_id>/questions/', SurveyView.QuestionListCreateAPIView.as_view(), name='question-list-create'),
+   # path('api/questions/<int:pk>/', SurveyView.QuestionRetrieveUpdateDestroyAPIView.as_view(), name='question-detail'),
      
     #Categories
     path('api/categories/',CategoryView.CategoryListView.as_view(), name='category-list'),

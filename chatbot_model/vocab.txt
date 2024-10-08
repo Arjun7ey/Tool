@@ -1,0 +1,11 @@
+<pad>
+<unk>
+hello
+world
+i
+am
+a
+chatbot
+how
+are
+you

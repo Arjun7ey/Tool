@@ -8,6 +8,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState({
     userId: '',
+    email:'',
     userRole: 'User',
     username: '',
     fullName: '',  // Add fullName to the state
@@ -21,9 +22,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axiosInstance.get('/api/user-data/');
       if (response.data) {
-        const { userId, userRole, username, fullName, departments, profilePicture } = response.data; // Fetch profilePicture along with other fields
-        console.log('Fetched user data:', response.data);
-        setUserData({ userId, userRole, username, fullName, departments, profilePicture });
+        const { userId, userRole,email, username, fullName, departments, profilePicture } = response.data; // Fetch profilePicture along with other fields
+        
+        setUserData({ userId, userRole, username, fullName, departments, profilePicture,email });
       } else {
         throw new Error('Invalid response format');
       }

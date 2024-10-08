@@ -203,6 +203,7 @@ class ImageUploadView(APIView):
                     'id': new_image.id,
                     'rating': new_image.rating,
                     'image_url': new_image.image.url if new_image.image else None,
+                    'status': new_image.status
                    
                 }
             }

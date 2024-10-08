@@ -12,9 +12,35 @@ import {
   InputLabel,
   Divider,
   Snackbar,
-  Alert
+  Alert,
+  Typography,
+  Box,
+  FormControl
 } from '@mui/material';
-import axiosInstance from '../utils/axiosInstance'; // Import your axios instance
+import { styled } from '@mui/material/styles';
+import { Add as AddIcon } from '@mui/icons-material';
+import axiosInstance from '../utils/axiosInstance';
+
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialogTitle-root': {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+  },
+  '& .MuiDialogContent-root': {
+    padding: theme.spacing(3),
+  },
+  '& .MuiDialogActions-root': {
+    padding: theme.spacing(2),
+  },
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  backgroundColor: '#fce8805e',
+  color: '#F4B400',
+  '&:hover': {
+    backgroundColor: '#fce88080',
+  },
+}));
 
 const CreateNewEvent = () => {
   const [open, setOpen] = useState(false);
@@ -34,22 +60,18 @@ const CreateNewEvent = () => {
     const fetchDepartments = async () => {
       try {
         const response = await axiosInstance.get('api/department-userwise/');
-        setDepartments(response.data);
+        setDepartments(response.data.departments);
       } catch (error) {
         console.error('Error fetching departments:', error);
+        showSnackbar('Error fetching departments. Please try again.', 'error');
       }
     };
 
     fetchDepartments();
   }, []);
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const handleClickOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   const showSnackbar = (message, severity) => {
     setSnackbarMessage(message);
@@ -57,8 +79,37 @@ const CreateNewEvent = () => {
     setSnackbarOpen(true);
   };
 
+  const validateForm = () => {
+    if (!eventName.trim()) {
+      showSnackbar('Please enter an event name.', 'error');
+      return false;
+    }
+    if (!eventStartDate || !eventStartTime) {
+      showSnackbar('Please set the event start date and time.', 'error');
+      return false;
+    }
+    if (!eventEndDate || !eventEndTime) {
+      showSnackbar('Please set the event end date and time.', 'error');
+      return false;
+    }
+    if (new Date(`${eventStartDate}T${eventStartTime}`) < new Date()) {
+      showSnackbar('Start date and time cannot be in the past.', 'error');
+      return false;
+    }
+    if (new Date(`${eventEndDate}T${eventEndTime}`) <= new Date(`${eventStartDate}T${eventStartTime}`)) {
+      showSnackbar('End date and time must be after the start date and time.', 'error');
+      return false;
+    }
+    if (!selectedDepartment) {
+      showSnackbar('Please select a department.', 'error');
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = async () => {
-    // Combine date and time into DateTime strings
+    if (!validateForm()) return;
+
     const startDateTime = `${eventStartDate}T${eventStartTime}`;
     const endDateTime = `${eventEndDate}T${eventEndTime}`;
 
@@ -69,38 +120,37 @@ const CreateNewEvent = () => {
       department: selectedDepartment,
     };
 
-    await addEvent(newEvent, showSnackbar);
-    handleClose();
-  };
-
-  const addEvent = async (newEvent, showSnackbar) => {
     try {
       const response = await axiosInstance.post('api/events/', newEvent);
       setEvents((prevEvents) => [...prevEvents, response.data]);
       showSnackbar('Event added successfully!', 'success');
+      handleClose();
     } catch (error) {
       console.error('Error adding event:', error);
       showSnackbar('Error adding event. Please try again.', 'error');
     }
   };
 
-  const handleSnackbarClose = () => {
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') return;
     setSnackbarOpen(false);
   };
 
   return (
-    <div className="p-4 bg-white rounded mb-6">
-      <Button
-        style={{ backgroundColor: '#fce8805e', opacity: '1', color: '#F4B400' }}
+    <Box className="p-4 bg-white rounded mb-6">
+      <StyledButton
         variant="contained"
         fullWidth
         onClick={handleClickOpen}
+        startIcon={<AddIcon />}
       >
-        + Create New Event
-      </Button>
+        Create New Event
+      </StyledButton>
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>Create New Event</DialogTitle>
+      <StyledDialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>
+          <Typography variant="h6">Create New Event</Typography>
+        </DialogTitle>
         <Divider />
         <DialogContent>
           <TextField
@@ -111,9 +161,10 @@ const CreateNewEvent = () => {
             type="text"
             fullWidth
             variant="outlined"
+            value={eventName}
             onChange={(e) => setEventName(e.target.value)}
           />
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={6}>
               <TextField
                 margin="dense"
@@ -122,10 +173,10 @@ const CreateNewEvent = () => {
                 type="date"
                 fullWidth
                 variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
+                value={eventStartDate}
                 onChange={(e) => setEventStartDate(e.target.value)}
+                inputProps={{ min: new Date().toISOString().split('T')[0] }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -136,14 +187,13 @@ const CreateNewEvent = () => {
                 type="time"
                 fullWidth
                 variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
+                value={eventStartTime}
                 onChange={(e) => setEventStartTime(e.target.value)}
               />
             </Grid>
           </Grid>
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={6}>
               <TextField
                 margin="dense"
@@ -152,10 +202,10 @@ const CreateNewEvent = () => {
                 type="date"
                 fullWidth
                 variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
+                value={eventEndDate}
                 onChange={(e) => setEventEndDate(e.target.value)}
+                inputProps={{ min: eventStartDate }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -166,61 +216,55 @@ const CreateNewEvent = () => {
                 type="time"
                 fullWidth
                 variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
+                value={eventEndTime}
                 onChange={(e) => setEventEndTime(e.target.value)}
               />
             </Grid>
           </Grid>
-          <InputLabel id="department-label" style={{ marginTop: '16px' }}>
-            Department
-          </InputLabel>
-          <Select
-  labelId="department-label"
-  id="department"
-  onChange={(e) => setSelectedDepartment(e.target.value)}
-  fullWidth
-  variant="outlined"
-  value={selectedDepartment}
->
-  {departments
-    .filter(department => department.name !== 'Super Department') 
-    .map(department => (
-      <MenuItem key={department.id} value={department.id}>
-        {department.name}
-      </MenuItem>
-    ))}
-</Select>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="department-label">Department</InputLabel>
+            <Select
+              labelId="department-label"
+              id="department"
+              value={selectedDepartment}
+              label="Department"
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+            >
+              {departments
+                .filter(department => department.name !== 'Super Department')
+                .map(department => (
+                  <MenuItem key={department.id} value={department.id}>
+                    {department.name}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button color="error" onClick={handleClose}>
+          <Button onClick={handleClose} color="inherit">
             Cancel
           </Button>
-          <Button color="success" onClick={handleSave}>
+          <Button onClick={handleSave} color="primary" variant="contained">
             Save
           </Button>
         </DialogActions>
-      </Dialog>
+      </StyledDialog>
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
-        sx={{ backgroundColor: 'black' }} 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={handleSnackbarClose}
           severity={snackbarSeverity}
-          sx={{ 
-            width: '100%', 
-            backgroundColor: 'black',  
-            color: 'white'             
-          }}
+          sx={{ width: '100%', backgroundColor: 'black', color: 'white' }}
         >
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 };
 

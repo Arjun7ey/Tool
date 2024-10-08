@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser , BaseUserManager
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 import datetime
+import os
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -73,10 +74,12 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-
 class Survey(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='surveys')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -92,11 +95,20 @@ class Question(models.Model):
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default=TEXT)
+    choices = models.JSONField(null=True, blank=True)
+
 
     def __str__(self):
         return self.question_text
 
+class Response(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='responses')
+    user_identifier = models.CharField(max_length=255, blank=True, null=True)
+    date_submitted = models.DateTimeField(auto_now_add=True)
+    answers = models.JSONField()
 
+    def __str__(self):
+        return f"Response to {self.survey.title} by {self.user_identifier or 'Anonymous'}"
 
 class Department(models.Model):
     name = models.CharField(max_length=255)
@@ -215,20 +227,35 @@ class ImageManager(models.Manager):
             ).distinct()
         
 class Image(models.Model):
-  
-    def nameFile(instance,filename):
-        
-        return '/'.join(['images', str(instance.user.username), filename])   
+    def nameFile(instance, filename):
+        # Check if the user is assigned, otherwise use a temporary folder
+        if instance.user:
+            return os.path.join('images', str(instance.user.username), filename)
+        return os.path.join('images', 'default', filename)
+
     title = models.CharField(max_length=100)
-    image = models.ImageField(upload_to= nameFile,blank=True,null=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to=nameFile, blank=True, null=True)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    division = models.ForeignKey('Division', on_delete=models.CASCADE, null=True)
+    subdivision = models.ForeignKey('SubDivision', on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ForeignKey to user
     status = models.CharField(max_length=15, default='Pending')
     rating = models.IntegerField(default=2)
-    dated = models.DateField(auto_now_add = True)
-    tags = models.ManyToManyField(Tag, blank=True)
+    dated = models.DateField(auto_now_add=True)
+    tags = models.ManyToManyField('Tag', blank=True)
     status_change_date = models.DateField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+     if not self.pk:
+        saved_image = self.image
+        self.image = None
+        super().save(*args, **kwargs)
+        self.image = saved_image
+        if self.image:
+            super().save(update_fields=['image'])
+     else:
+        super().save(*args, **kwargs)
 
     def get_username(self):
         return self.user.username
@@ -248,29 +275,45 @@ class DocumentManager(models.Manager):
                 department__in=user.departments.all()
             ).distinct()
 
+
+
 class Document(models.Model):
-   
-    def nameFile(instance,filename):
-     return '/'.join(['documents', str(instance.user.username), filename])   
+    def nameFile(instance, filename):
+        if instance.user:
+            return os.path.join('documents', str(instance.user.username), filename)
+        return os.path.join('documents', 'default', filename)
+
     title = models.CharField(max_length=100)
-    docfile = models.FileField(upload_to= nameFile,blank=True,null=True)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    docfile = models.FileField(upload_to=nameFile, blank=True, null=True)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    division = models.ForeignKey('Division', on_delete=models.CASCADE, null=True)
+    subdivision = models.ForeignKey('SubDivision', on_delete=models.CASCADE, null=True)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(max_length=15, default='Pending')
-    last_modified = models.DateTimeField(auto_now_add = True)
+    last_modified = models.DateTimeField(auto_now=True)  # Changed to auto_now
     rating = models.IntegerField(default=2)
     status_change_date = models.DateField(null=True, blank=True)
 
-    objects =DocumentManager()
-    
-     
+    objects = DocumentManager()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            saved_docfile = self.docfile
+            self.docfile = None
+            super().save(*args, **kwargs)
+            self.docfile = saved_docfile
+            if self.docfile:
+                super().save(update_fields=['docfile'])
+        else:
+            super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.title  
-    
+        return self.title
+
     def get_username(self):
         return self.user.username
-                             
+    
 class PostManager(models.Manager):
      def for_user(self, user):
         if user.role == 'superadmin':
@@ -281,30 +324,52 @@ class PostManager(models.Manager):
             return self.filter(
                 department__in=user.departments.all()
             ).distinct()
-        
+
+
 class Post(models.Model):
-     
-    
     def nameFile(instance, filename):
-       return '/'.join(['posts', str(instance.user.username), filename])
+        if instance.user:
+            return os.path.join('posts', str(instance.user.username), filename)
+        return os.path.join('posts', 'default', filename)
     
-    title = models.CharField(max_length=200,)
+    title = models.CharField(max_length=200)
     description = models.TextField()
-    author = models.CharField(max_length=200,null=True,blank=True)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    last_modified = models.DateTimeField(auto_now_add=True)
+    author = models.CharField(max_length=200, null=True, blank=True)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    division = models.ForeignKey('Division', on_delete=models.CASCADE, null=True)
+    subdivision = models.ForeignKey('SubDivision', on_delete=models.CASCADE, null=True)
+    last_modified = models.DateTimeField(auto_now=True)  # Changed to auto_now
     status = models.CharField(max_length=15, default='Pending')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
     status_change_date = models.DateField(null=True, blank=True)
     rating = models.IntegerField(default=2)
     image = models.ImageField(upload_to=nameFile, blank=True, null=True)
     video = models.FileField(upload_to=nameFile, blank=True, null=True)
 
-    objects =PostManager()
+    objects = PostManager()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            saved_image = self.image
+            saved_video = self.video
+            self.image = None
+            self.video = None
+            super().save(*args, **kwargs)
+            self.image = saved_image
+            self.video = saved_video
+            if self.image or self.video:
+                update_fields = []
+                if self.image:
+                    update_fields.append('image')
+                if self.video:
+                    update_fields.append('video')
+                super().save(update_fields=update_fields)
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.title  
+        return self.title
      
 class VideoManager(models.Manager):
     def for_user(self, user):
@@ -317,27 +382,43 @@ class VideoManager(models.Manager):
                 department__in=user.departments.all()
             ).distinct()
 
+
+
 class Video(models.Model):
-  
     def nameFile(instance, filename):
-        return '/'.join(['videos', str(instance.user.username), filename])   
-        
+        if instance.user:
+            return os.path.join('videos', str(instance.user.username), filename)
+        return os.path.join('videos', 'default', filename)
+
     title = models.CharField(max_length=100)
     video = models.FileField(upload_to=nameFile, blank=True, null=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    division = models.ForeignKey('Division', on_delete=models.CASCADE, null=True)
+    subdivision = models.ForeignKey('SubDivision', on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(max_length=15, default='Pending')
     rating = models.IntegerField(default=2)
     dated = models.DateField(auto_now_add=True)
-    tags = models.ManyToManyField(Tag, blank=True)
+    tags = models.ManyToManyField('Tag', blank=True)
     status_change_date = models.DateField(null=True, blank=True)
+
+    objects = VideoManager()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            saved_video = self.video
+            self.video = None
+            super().save(*args, **kwargs)
+            self.video = saved_video
+            if self.video:
+                super().save(update_fields=['video'])
+        else:
+            super().save(*args, **kwargs)
 
     def get_username(self):
         return self.user.username
 
-    objects = VideoManager()
-                             
     def __str__(self):
         return self.title
 
@@ -349,6 +430,8 @@ class Content(models.Model):
     end_time = models.DateTimeField(blank=True,null= True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+    division = models.ForeignKey(Division, on_delete=models.CASCADE,null=True)
+    subdivision = models.ForeignKey(SubDivision, on_delete=models.CASCADE,null=True)
 
     def __str__(self):
         return self.title
@@ -360,6 +443,8 @@ class Event(models.Model):
     end_time = models.DateTimeField()
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+    division = models.ForeignKey(Division, on_delete=models.CASCADE,null=True)
+    subdivision = models.ForeignKey(SubDivision, on_delete=models.CASCADE,null=True)
     
     def __str__(self):
         return self.title
@@ -382,6 +467,8 @@ class LinkManager(models.Manager):
                 department__in=user.departments.all()
             ).distinct() 
     
+
+
 class Link(models.Model):
     PRINT_MEDIA = 'Print Media'
     DIGITAL_MEDIA = 'Digital Media'
@@ -389,32 +476,49 @@ class Link(models.Model):
         (PRINT_MEDIA, 'Print Media'),
         (DIGITAL_MEDIA, 'Digital Media'),
     ]
-    def nameFile(instance,filename):
-        
-        return '/'.join(['links', str(instance.user.username), filename])   
-    title = models.CharField(max_length=255,blank=True,null=True)  
+
+    def nameFile(instance, filename):
+        if instance.user:
+            return os.path.join('links', str(instance.user.username), filename)
+        return os.path.join('links', 'default', filename)
+
+    title = models.CharField(max_length=255, blank=True, null=True)  
     description = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=MEDIA_TYPE_CHOICES)
-    image = models.ImageField(upload_to= nameFile,blank=True,null=True)
-    link = models.URLField(max_length=200,blank=True,null=True)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to=nameFile, blank=True, null=True)
+    link = models.URLField(max_length=200, blank=True, null=True)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    division = models.ForeignKey('Division', on_delete=models.CASCADE, null=True)
+    subdivision = models.ForeignKey('SubDivision', on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=15, default='Pending')
     rating = models.IntegerField(default=2)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
     
-    objects =LinkManager()
+    objects = LinkManager()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            saved_image = self.image
+            self.image = None
+            super().save(*args, **kwargs)
+            self.image = saved_image
+            if self.image:
+                super().save(update_fields=['image'])
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self):
         return self.description
 
+
 class Tweet(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tweets')
-    tweet_id = models.CharField(max_length=255, unique=True)  
-    status = models.TextField() 
-    media_url = models.URLField(blank=True, null=True)  
-    created_at = models.DateTimeField(auto_now_add=True)  
+    tweet_id = models.CharField(max_length=255, unique=True)
+    status = models.TextField()
+    media_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     retweets = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
@@ -425,6 +529,11 @@ class Tweet(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if self.status:
+            self.status = self.status.encode('utf-8').decode('utf-8')
+        super().save(*args, **kwargs)
 
 class Engagement(models.Model):
     tweet = models.OneToOneField(Tweet, on_delete=models.CASCADE, related_name='engagement')
@@ -461,4 +570,67 @@ class Message(models.Model):
     read = models.BooleanField(default=False)  # Indicates if the message has been read
     edited = models.BooleanField(default=False)  # Indicates if the message has been edited  
 
+class Module(models.Model):
+    name = models.CharField(max_length=100)
+
+class EmailDomainPermission(models.Model):
+    domain = models.CharField(max_length=100)  # e.g., "example.com"
+    allowed_modules = models.ManyToManyField(Module)
     
+
+
+def name_file(instance, filename):
+    return f'ticket_attachments/{instance.created_by.username}/{filename}'
+
+class Ticket(models.Model):
+    PRIORITY_CHOICES = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High'),
+        ('URGENT', 'Urgent'),
+    ]
+    STATUS_CHOICES = [
+        ('OPEN', 'Open'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('RESOLVED', 'Resolved'),
+        ('CLOSED', 'Closed'),
+    ]
+    SOURCE_CHOICES = [
+        ('INTERNAL', 'Internal'),
+        ('EMAIL', 'Email'),
+        ('SOCIAL', 'Social Media'),
+        ('PHONE', 'Phone'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tickets')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tickets')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='MEDIUM')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='OPEN')
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='INTERNAL')
+    due_date = models.DateTimeField(null=True, blank=True)
+    is_social_media_ticket = models.BooleanField(default=False)
+    social_media_platform = models.CharField(max_length=50, blank=True, null=True)
+    social_media_post_id = models.CharField(max_length=100, blank=True, null=True)
+    social_media_post_url = models.URLField(blank=True, null=True)
+    attachment = models.ImageField(
+        upload_to=name_file,
+        blank=True,
+        null=True,
+        verbose_name="Ticket Attachment"  # This is the new addition
+    )
+    def __str__(self):
+        return f"Ticket #{self.id}: {self.title}"
+
+class TicketUpdate(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='updates')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    attachment = models.FileField(upload_to='ticket_updates/', blank=True, null=True)
+
+    def __str__(self):
+        return f"Update on Ticket #{self.ticket.id} by {self.user.username}"

@@ -87,19 +87,16 @@ class PostUploadView(APIView):
     @csrf_exempt
     def post(self, request, *args, **kwargs):
         # Print raw request data
-        print('Raw request data:', request.data)
+       
 
         # Print content types of files if any
-        if 'image' in request.FILES:
-            print('Image content type:', request.FILES['image'].content_type)
-        if 'video' in request.FILES:
-            print('Video content type:', request.FILES['video'].content_type)
+        
 
         serializer = PostUploadSerializer(data=request.data, context={'request': request})
         
         if serializer.is_valid():
             # Print serialized data
-            print('Serialized data:', serializer.validated_data)
+           
 
             # Save the validated data
             new_post = serializer.save(user=request.user)
@@ -126,6 +123,7 @@ class PostUploadView(APIView):
                     'image_url': new_post.image.url if new_post.image else None,
                     'video_url': new_post.video.url if new_post.video else None,
                     'submitted_by': new_post.user.username,
+                    'status': new_post.status
                    # Assuming there's a created_at field
                 }
             }
@@ -133,7 +131,7 @@ class PostUploadView(APIView):
             return JsonResponse(response_data, status=200)
         else:
             # Print serializer errors
-            print('Serializer errors:', serializer.errors)
+          
             return JsonResponse({'error': serializer.errors}, status=400)
 
 @csrf_exempt  

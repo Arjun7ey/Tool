@@ -18,16 +18,21 @@ from rest_framework.views import APIView
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from django.urls import reverse_lazy
+from django.shortcuts import render,redirect, get_object_or_404
 from upload.models import Post
 from django.contrib.auth.models import Permission
 #from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import render, get_object_or_404, redirect    
+from django.contrib.auth.decorators import login_required
 from upload.models import Department
 from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenRefreshView as BaseTokenRefreshView
 from upload.Serializers.UserSerializer import CustomTokenRefreshSerializer
-
+from django.middleware.csrf import get_token
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from upload.serializers import CustomTokenObtainPairSerializer
@@ -39,7 +44,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view, permission_classes
 from django.middleware.csrf import get_token
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import views
+from rest_framework import views, status
 from upload.Serializers.UserSerializer import UserInfoSerializer, UserPermissionsSerializer,AllUserSerializer
 from upload.Serializers.UserSerializer import CreateUserSerializer, UserPermissionsUpdateSerializer
 from upload.serializers import MyTokenObtainPairSerializer
@@ -48,6 +53,9 @@ from upload.Serializers.UserSerializer import UserNewSerializer
 from upload.Serializers.UserSerializer import UserPicSerializer
 from django.views.decorators.http import require_http_methods
 from rest_framework import generics
+from django.core.exceptions import PermissionDenied
+from rest_framework import status
+from rest_framework.parsers import JSONParser
 from django.contrib.auth import logout as django_logout
 
 
@@ -281,6 +289,7 @@ def get_user_data(request):
     full_name = f"{user.first_name} {user.last_name}" if user else ''
     departments = user.departments.all() if user else []
     user_id = user.id
+    email=user.email
     phone_number = user.phone_number if user else ''  # Add phone number
     
     # Convert departments queryset to a list of dictionaries with id and name
@@ -293,6 +302,7 @@ def get_user_data(request):
         'userRole': role,
         'username': username,
         'fullName': full_name,
+        'email':email,
         'userId': user_id,
         'phoneNumber': phone_number,  # Include phone number in the response
         'departments': department_list,  # List of dictionaries with id and name
@@ -304,34 +314,36 @@ def get_csrf_token(request):
     """
     View to get CSRF token.
     """
-    return JsonResponse({'csrftoken': request.csrf_token})
+    csrf_token = get_token(request)  # Get the CSRF token
+    return JsonResponse({'csrftoken': csrf_token})
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
-@csrf_exempt
-@api_view(['POST'])
-def my_token_obtain_pair(request):
-    # Modify the request data to include 'username'
-    data = request.data.copy()
-    data['username'] = data.get('email')
+    def post(self, request, *args, **kwargs):
+       
 
-    serializer = MyTokenObtainPairSerializer(data=data)
-    if serializer.is_valid():
-        # Retrieve both access and refresh tokens
-        access_token = serializer.validated_data.get('access')
-        refresh_token = serializer.validated_data.get('refresh')
+        # Modify the request data to include 'username'
+        data = request.data.copy()
+        data['username'] = data.get('email')
 
-        # Return both tokens in the response
-        return Response({
-            'access': str(access_token),
-            'refresh': str(refresh_token)
-        }, status=status.HTTP_200_OK)
-    
-    # Log validation errors and return response
-    print("Validation failed with errors:", serializer.errors)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            # Retrieve both access and refresh tokens
+            access_token = serializer.validated_data.get('access')
+            refresh_token = serializer.validated_data.get('refresh')
+           
+            # Return both tokens in the response
+            return Response({
+                'access': str(access_token),
+               'refresh': str(refresh_token)
+            }, status=status.HTTP_200_OK)
+        print("Validation failed with errors:", serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 class CustomTokenRefreshView(BaseTokenRefreshView):
@@ -492,7 +504,7 @@ def create_user(request):
 def user_list(request):
     # Get users based on the role of the request user
     users = User.objects.for_user(request.user)
-    print(request.user.role)
+    
     # Further filter users if the role is departmentadmin or user
     if request.user.role in ['departmentadmin', 'divisionadmin']:
         users = users.filter(Q(role='divisionadmin') | Q(role='subdivisionuser'))
@@ -524,6 +536,17 @@ def login_view(request):
             return Response({'error': 'Invalid credentials'}, status=401)
     else:
         return Response({'error': 'Method not allowed'}, status=405)    
+    
+@api_view(['POST'])
+def logout_view(request):
+    logout(request)
+    return JsonResponse({'message': 'Logout successful'})
+
+    
+
+            
+
+
 
 def removepermission(request):
     codename = "add_image"
@@ -578,6 +601,15 @@ class UserLoginView(ObtainAuthToken):
             return Response({'message': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+class UserLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        print(request.headers) 
+        token_key = request.auth.key
+        token = Token.objects.get(key=token_key)
+        token.delete()
+
+        return Response({'detail': 'Successfully logged out.'})
     
  

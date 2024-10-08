@@ -3,6 +3,10 @@ import logging
 import requests
 from django.conf import settings
 from django.http import JsonResponse
+from django.utils.encoding import force_str
+from requests_oauthlib import OAuth1Session
+from PIL import Image
+import io
 from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from requests_oauthlib import OAuth1Session
@@ -125,13 +129,21 @@ def post_text_to_twitter(request):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
+
+
 @csrf_exempt
 def post_text_with_media_to_twitter(request):
     if request.method == 'POST':
         try:
-            status = request.POST.get('status', '')
+            status = force_str(request.POST.get('status', ''))
             media = request.FILES.get('media', None)
             user_id = request.POST.get('user_id', None)
+            
+            print("Data received from frontend:")
+            print(f"Status: {status}")
+            print(f"Media: {media}")
+            print(f"User ID: {user_id}")
 
             if not status:
                 return JsonResponse({'error': 'Status is required'}, status=400)
@@ -154,43 +166,68 @@ def post_text_with_media_to_twitter(request):
             media_id = None
             if media:
                 try:
+                    # Compress image if it's too large
+                    img = Image.open(media)
+                    img_io = io.BytesIO()
+                    img.save(img_io, format='JPEG', quality=70, optimize=True)
+                    img_io.seek(0)
+                    
+                    if img_io.getbuffer().nbytes > 5 * 1024 * 1024:  # 5MB limit
+                        return JsonResponse({'error': 'Image file is too large. Please use an image smaller than 5MB.'}, status=400)
+                    
                     media_response = oauth.post(
                         'https://upload.twitter.com/1.1/media/upload.json',
-                        files={'media': media},
+                        files={'media': img_io},
                         verify=False  # Consider setting verify=True in production
                     )
                     media_response.raise_for_status()
                     media_data = media_response.json()
                     media_id = media_data.get('media_id_string')
+                    print(f"Media upload response: {media_data}")
                 except Exception as e:
-                    # Log the error but do not stop the process if media upload fails
+                    print(f"Media upload failed: {str(e)}")
                     logger.error(f'Media upload failed: {str(e)}')
                     media_id = None
 
+            print("Posting tweet to Twitter:")
+            print(f"Status text: {status}")
+            print(f"Media ID: {media_id}")
+            
+            tweet_data = {'text': status}
+            if media_id:
+                tweet_data['media'] = {'media_ids': [media_id]}
+            
+            print(f"Tweet data being sent: {tweet_data}")
+
             tweet_response = oauth.post(
                 'https://api.twitter.com/2/tweets',
-                json={'text': status, 'media': {'media_ids': [media_id]} if media_id else None},
+                json=tweet_data,
                 verify=False  # Consider setting verify=True in production
             )
             tweet_response.raise_for_status()
 
             response_data = tweet_response.json()
+            print(f"Twitter API Response: {json.dumps(response_data, indent=2)}")
             logger.debug('Twitter API Response: %s', json.dumps(response_data, indent=2))
 
             tweet_id = response_data['data']['id']
 
-            tweet = Tweet(
-                user=user,
-                tweet_id=tweet_id,
-                status=status,
-                media_url=media_data.get('media_url', '') if media and media_id else '',
-            )
-            tweet.save()
+            try:
+                tweet = Tweet(
+                    user=user,
+                    tweet_id=tweet_id,
+                    status=status,
+                    media_url=media_data.get('media_url', '') if media and media_id else '',
+                )
+                tweet.save()
+            except Exception as db_error:
+                logger.error(f'Error saving tweet to database: {str(db_error)}')
+                # Continue execution even if database save fails
 
             return JsonResponse({'success': True, 'tweet_id': tweet_id})
 
         except Exception as e:
-            # Only return an error response for critical exceptions
+            print(f"Critical exception occurred: {str(e)}")
             logger.error(f'Critical exception occurred: {str(e)}')
             return JsonResponse({'error': 'A critical error occurred while posting. Please try again.'}, status=500)
 

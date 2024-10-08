@@ -1,11 +1,26 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { createTheme } from '@mui/material/styles';
 import eyLight from '../assets/images/logo/EYLight.jpeg';
 import eyDark from '../assets/images/logo/EYDark.jpeg';
 import eyCustom from '../assets/images/logo/EYDark.jpeg';
 
-// Define theme styles
+// Define base theme styles
+const baseLightTheme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
+
+const baseDarkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
+
+// Define custom theme styles
 const themes = {
   light: {
+    ...baseLightTheme,
     logo: eyLight,
     sidebar: {
       backgroundColor: '#ffffff',
@@ -24,6 +39,7 @@ const themes = {
     },
   },
   custom: {
+    ...baseDarkTheme,
     logo: eyDark,
     sidebar: {
       backgroundColor: '#0b2948',
@@ -42,6 +58,7 @@ const themes = {
     },
   },
   dark: {
+    ...baseDarkTheme,
     logo: eyCustom,
     sidebar: {
       backgroundColor: '#2f2f2f',

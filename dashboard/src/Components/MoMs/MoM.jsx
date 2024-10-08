@@ -1,37 +1,66 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Button, TextField, Checkbox, FormControlLabel, Select, MenuItem,
+  Stepper, Step, StepLabel, Typography, Box, Paper, Container,
+  Snackbar, Alert, IconButton, FormControl, InputLabel, List, ListItem, ListItemText, ListItemIcon
+} from '@mui/material';
+import { Add as AddIcon, Remove as RemoveIcon, ArrowBack, ArrowForward, CheckBox, CheckBoxOutlineBlank, List as ListIcon } from '@mui/icons-material';
+import { styled } from '@mui/system';
 import axiosInstance from '../utils/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import Snackbar from '@mui/material/Snackbar';
-import MuiAlert from '@mui/material/Alert';
-import { Button, MenuItem, Select, InputLabel, FormControl, TextField, Checkbox, FormControlLabel } from '@mui/material';
 
-const MoMForm = () => {
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(3),
+  marginBottom: theme.spacing(3),
+  backgroundColor: '#f8f9fa',
+  borderRadius: '12px',
+  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  borderRadius: '20px',
+  padding: '10px 20px',
+  textTransform: 'none',
+  fontWeight: 'bold',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  backgroundColor: '#FFD700', // Gold color
+  color: '#000000', // Black color
+  '&:hover': {
+    backgroundColor: '#FFC700', // Slightly darker gold on hover
+    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+  },
+}));
+
+const steps = ['Basic Information', 'Select Fields', 'Record Details', 'Review & Submit'];
+
+const allFields = [
+  'sn_number',
+  'discussion_points',
+  'discussion_lead',
+  'contributors',
+  'tentative_dates',
+  'decision_taken',
+  'action_items',
+  'responsible_person_id',
+  'status',
+  'comments_notes',
+  'priority_level',
+  'impact',
+  'follow_up_required',
+];
+
+const requiredFields = ['sn_number', 'responsible_person_id'];
+
+const ModernFlexibleMoMForm = () => {
+  const [activeStep, setActiveStep] = useState(0);
   const [title, setTitle] = useState('');
-  const [momRecords, setMomRecords] = useState([
-    {
-      sn_number: '',
-      discussion_points: '',
-      discussion_lead: '',
-      contributors: '',
-      tentative_dates: '',
-      decision_taken: '',
-      action_items: '',
-      responsible_person_id: '',
-      status: '',
-      comments_notes: '',
-      priority_level: '',
-      impact: '',
-      follow_up_required: false,
-      isOpen: false,
-      showFields: [], // State to track which fields to show
-    }
-  ]);
-
+  const [selectedFields, setSelectedFields] = useState(['sn_number', 'discussion_points', 'responsible_person_id']);
+  const [momRecords, setMomRecords] = useState([{}]);
   const [users, setUsers] = useState([]);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [selectedField, setSelectedField] = useState('');
-  const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,83 +70,48 @@ const MoMForm = () => {
         setUsers(response.data);
       } catch (error) {
         console.error('Error fetching users:', error);
+        showSnackbar('Error fetching users. Please refresh the page.', 'error');
       }
     };
 
     fetchUsers();
   }, []);
 
-  const validate = () => {
-    const record = momRecords[0];
-  
-    if (!title.trim()) {
-      setSnackbarMessage('Title is required.');
-      setSnackbarOpen(true);
-      setCurrentFieldIndex(0);
-      return false;
+  const handleNext = () => {
+    if (activeStep === 0 && !title.trim()) {
+      showSnackbar('Please enter a tracker title.', 'error');
+      return;
     }
-  
-    if (!record.sn_number.trim()) {
-      setSnackbarMessage('Serial Number is required.');
-      setSnackbarOpen(true);
-      setCurrentFieldIndex(1);
-      return false;
+
+    if (activeStep === 1) {
+      if (!selectedFields.includes('sn_number') || !selectedFields.includes('responsible_person_id')) {
+        showSnackbar('SN Number and Responsible Person are required fields.', 'error');
+        return;
+      }
+      // Initialize momRecords with selected fields
+      setMomRecords([selectedFields.reduce((acc, field) => ({ ...acc, [field]: '' }), {})]);
     }
-  
-    if (!record.responsible_person_id) {
-      setSnackbarMessage('Responsible Person is required.');
-      setSnackbarOpen(true);
-      setCurrentFieldIndex(3);
-      return false;
+
+    if (activeStep === 2) {
+      const isValid = validateRecords();
+      if (!isValid) return;
     }
-  
-    return true;
+
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
-  const handleChange = (index, e) => {
-    const { name, value, type, checked } = e.target;
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleChange = (index, field, value) => {
     const newMomRecords = [...momRecords];
-    newMomRecords[index] = { ...newMomRecords[index], [name]: type === 'checkbox' ? checked : value };
+    newMomRecords[index] = { ...newMomRecords[index], [field]: value };
     setMomRecords(newMomRecords);
-  };
-
-  const handleSelectChange = (index, e) => {
-    const { name, value } = e.target;
-    const newMomRecords = [...momRecords];
-    newMomRecords[index] = { ...newMomRecords[index], [name]: parseInt(value, 10) || '' }; // Convert to integer
-    setMomRecords(newMomRecords);
-  };
-
-  const handleAddField = (index) => {
-    if (selectedField && !momRecords[index].showFields.includes(selectedField)) {
-      const newMomRecords = [...momRecords];
-      newMomRecords[index].showFields.push(selectedField);
-      setMomRecords(newMomRecords);
-      setSelectedField(''); // Clear selected field after adding
-    }
   };
 
   const handleAddRecord = () => {
-    setMomRecords([
-      ...momRecords,
-      {
-        sn_number: '',
-        discussion_points: '',
-        discussion_lead: '',
-        contributors: '',
-        tentative_dates: '',
-        decision_taken: '',
-        action_items: '',
-        responsible_person_id: '',
-        status: '',
-        comments_notes: '',
-        priority_level: '',
-        impact: '',
-        follow_up_required: false,
-        isOpen: false,
-        showFields: [], // Initialize with no fields shown
-      }
-    ]);
+    setMomRecords([...momRecords, selectedFields.reduce((acc, field) => ({ ...acc, [field]: '' }), {})]);
   };
 
   const handleRemoveRecord = (index) => {
@@ -125,412 +119,268 @@ const MoMForm = () => {
     setMomRecords(newMomRecords);
   };
 
-  const handleToggleRecord = (index) => {
-    const newMomRecords = [...momRecords];
-    newMomRecords[index].isOpen = !newMomRecords[index].isOpen;
-    setMomRecords(newMomRecords);
+  const handleFieldToggle = (field) => {
+    setSelectedFields(prevFields =>
+      prevFields.includes(field)
+        ? prevFields.filter(f => f !== field)
+        : [...prevFields, field]
+    );
+  };
+
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  const navigateToList = () => {
+    navigate('/momslist');
+  };
+
+  const validateRecords = () => {
+    for (let i = 0; i < momRecords.length; i++) {
+      const record = momRecords[i];
+      for (const field of requiredFields) {
+        if (record[field] === undefined || record[field] === null || 
+            (typeof record[field] === 'string' && record[field].trim() === '') ||
+            (typeof record[field] === 'number' && isNaN(record[field]))) {
+          showSnackbar(`${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} is required for Record ${i + 1}.`, 'error');
+          return false;
+        }
+      }
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    if (validate()) {
-      try {
-        const momRows = momRecords.map(record => ({
-          sn_number: record.sn_number,
-          discussion_points: record.discussion_points,
-          discussion_lead: record.discussion_lead,
-          contributors: record.contributors,
-          tentative_dates: record.tentative_dates,
-          decision_taken: record.decision_taken,
-          action_items: record.action_items,
-          responsible_person_id: record.responsible_person_id,
-          status: record.status,
-          comments_notes: record.comments_notes,
-          priority_level: record.priority_level,
-          impact: record.impact,
-          follow_up_required: record.follow_up_required,
-        }));
-
-        const response = await axiosInstance.post('/api/mom-create/', {
-          title: title,
-          mom_rows_create: momRows,
-        });
-  
-        console.log('MoM records created:', response.data);
-        navigate('/momslist');
-      } catch (error) {
-        if (error.response && error.response.data) {
-          const errorMessages = error.response.data;
-          if (errorMessages.mom_rows_create) {
-            const snNumberErrors = errorMessages.mom_rows_create
-            .flatMap(row => row.sn_number || [])
-            .map(error => error.replace('mo m row with this sn number already exists.', 'A record with this serial number already exists.'))
-            .join(', ');
-  
-            setSnackbarMessage(snNumberErrors || 'Error creating MoM.');
-            setSnackbarOpen(true);
-          } else {
-            setSnackbarMessage('Error creating MoM.');
-            setSnackbarOpen(true);
-          }
-        } else {
-          setSnackbarMessage('Error creating MoM.');
-          setSnackbarOpen(true);
-        }
-        console.error('Error creating MoM:', error.response?.data || error.message);
+    try {
+      // Validate form data
+      if (!title.trim()) {
+        throw new Error('Tracker title is required.');
       }
+
+      if (!validateRecords()) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Filter out empty records
+      const nonEmptyRecords = momRecords.filter(record => 
+        Object.values(record).some(value => 
+          value !== undefined && value !== null && value !== '' && !isNaN(value)
+        )
+      );
+
+      if (nonEmptyRecords.length === 0) {
+        throw new Error('At least one non-empty record is required.');
+      }
+
+      // Log the data being sent
+      console.log('Submitting data:', { title, mom_rows_create: nonEmptyRecords });
+
+      const response = await axiosInstance.post('/api/mom-create/', {
+        title: title,
+        mom_rows_create: nonEmptyRecords,
+      });
+
+      console.log('MoM records created:', response.data);
+      showSnackbar('Tracker created successfully!', 'success');
+      setTimeout(() => navigate('/momslist'), 2000);
+    } catch (error) {
+      console.error('Error creating MoM:', error);
+      let errorMessage = 'Error creating tracker. Please try again.';
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      showSnackbar(errorMessage, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleNavigateToList = () => {
-    navigate('/momslist');
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-    if (currentFieldIndex < 12) {
-      setCurrentFieldIndex(prevIndex => prevIndex + 1);
-      validate();
+  const renderStepContent = (step) => {
+    switch (step) {
+      case 0:
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>Basic Information</Typography>
+            <TextField
+              fullWidth
+              label="Tracker Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              margin="normal"
+              required
+            />
+          </Box>
+        );
+      case 1:
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>Select Fields for Records</Typography>
+            <List>
+              {allFields.map((field) => (
+                <ListItem key={field} button onClick={() => handleFieldToggle(field)}>
+                  <ListItemIcon>
+                    {selectedFields.includes(field) ? <CheckBox /> : <CheckBoxOutlineBlank />}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    secondary={requiredFields.includes(field) ? '(Required)' : ''}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        );
+      case 2:
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>Record Details</Typography>
+            {momRecords.map((record, index) => (
+              <StyledPaper key={index} elevation={3}>
+                <Typography variant="subtitle1" gutterBottom>Record {index + 1}</Typography>
+                {selectedFields.map((field) => (
+                  <React.Fragment key={field}>
+                    {field === 'responsible_person_id' ? (
+                      <FormControl fullWidth margin="normal" required>
+                        <InputLabel>Responsible Person</InputLabel>
+                        <Select
+                          value={record[field] || ''}
+                          onChange={(e) => handleChange(index, field, e.target.value)}
+                          label="Responsible Person"
+                        >
+                          {users.map(user => (
+                            <MenuItem key={user.id} value={user.id}>{user.full_name}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    ) : field === 'follow_up_required' ? (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={record[field] || false}
+                            onChange={(e) => handleChange(index, field, e.target.checked)}
+                          />
+                        }
+                        label="Follow Up Required"
+                      />
+                    ) : (
+                      <TextField
+                        fullWidth
+                        label={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        value={record[field] || ''}
+                        onChange={(e) => handleChange(index, field, e.target.value)}
+                        margin="normal"
+                        required={requiredFields.includes(field)}
+                        multiline={field === 'discussion_points' || field === 'action_items'}
+                        rows={field === 'discussion_points' || field === 'action_items' ? 3 : 1}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+                {momRecords.length > 1 && (
+                  <IconButton onClick={() => handleRemoveRecord(index)} color="secondary">
+                    <RemoveIcon />
+                  </IconButton>
+                )}
+              </StyledPaper>
+            ))}
+            <StyledButton
+              startIcon={<AddIcon />}
+              onClick={handleAddRecord}
+              variant="outlined"
+              sx={{ mt: 2 }}
+            >
+              Add Another Record
+            </StyledButton>
+          </Box>
+        );
+      case 3:
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>Review & Submit</Typography>
+            <Typography variant="subtitle1">Title: {title}</Typography>
+            <Typography variant="subtitle1">Selected Fields: {selectedFields.join(', ')}</Typography>
+            <Typography variant="subtitle1">Total Records: {momRecords.length}</Typography>
+            {/* You can add more detailed review information here if needed */}
+          </Box>
+        );
+      default:
+        return 'Unknown step';
     }
   };
-
-  const fieldOptions = [
-    'Discussion_points',
-    'Discussion_lead',
-    'Contributors',
-    'Tentative_dates',
-    'Decision_taken',
-    'Action_items',
-    'Status',
-    'Comments_notes',
-    'Priority_level',
-    'Impact',
-  ];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-gray-100 rounded-lg shadow-lg">
-      <div className="flex justify-end mb-4">
-      <Button
-  onClick={handleNavigateToList}
-  sx={{
-    backgroundColor: '#FFE600', // Yellow background by default
-    color: '#262b3b', // Black font color by default
-    borderColor: '#262b3b', // Black border
-    borderWidth: '1px', // Thin border
-    borderStyle: 'solid', // Solid border style
-    borderRadius: '20px', // Rounded corners
-    padding: '8px 16px', // Padding
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Shadow effect
-    textTransform: 'none', // Prevent text transformation to uppercase
-    '&:hover': {
-      backgroundColor: '#ffffff', // White background on hover
-      color: '#262b3b', // Black font color on hover
-      borderColor: '#262b3b', // Black border on hover
-      boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
-    },
-    width: 'auto',
-    border: 'none', // Remove default border
-    cursor: 'pointer', // Pointer cursor on hover
-  }}
->
-  List of Trackers
-</Button>
-
-
-      </div>
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-3xl font-semibold mb-6 text-center">Create Issue Tracker </h2>
-
-        <div className="mb-6">
-          <TextField
-            label="Title"
-            name="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            fullWidth
-            variant="outlined"
-          />
-        </div>
-
-        {momRecords.map((record, index) => (
-          <div key={index} className="mb-6 border rounded-lg bg-gray-50 p-4 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-medium">Record {index + 1}</h3>
-              <Button
-    type="button"
-    onClick={() => handleToggleRecord(index)}
-    sx={{
-        backgroundColor: '#FFE600', // Yellow background by default
-        color: '#262b3b', // Black font color by default
-        borderColor: '#262b3b', // Black border
-        borderWidth: '1px', // Thin border
-        borderStyle: 'solid', // Solid border style
-        borderRadius: '20px', // Rounded corners
-        padding: '6px 12px', // Padding
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Shadow effect
-        textTransform: 'none',
-        '&:hover': {
-            backgroundColor: '#ffffff', // White background on hover
-            color: '#262b3b', // Black font color on hover
-            borderColor: '#262b3b', // Black border on hover
-            boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
-        },
-        border: 'none', // Remove default border
-        cursor: 'pointer', // Pointer cursor on hover
-    }}
->
-    {record.isOpen ? 'Collapse' : 'Expand'}
-</Button>
-
-            </div>
-
-            {record.isOpen && (
-              <>
-                <div className="mb-4">
-                  <TextField
-                    label="SN Number"
-                    name="sn_number"
-                    value={record.sn_number}
-                    onChange={(e) => handleChange(index, e)}
-                    fullWidth
-                    variant="outlined"
-                  />
-                </div>
-
-                <div className="mb-4">
-  <FormControl fullWidth variant="outlined">
-    <InputLabel id="select-field-label">Select Field</InputLabel>
-    <Select
-      labelId="select-field-label"
-      value={selectedField}
-      onChange={(e) => setSelectedField(e.target.value)}
-      label="Select Field"
-      MenuProps={{
-        PaperProps: {
-          style: {
-            maxHeight: 200, // Adjust max height as needed
-          },
-        },
-      }}
-      sx={{
-        '& .MuiSelect-select': {
-          paddingTop: '12px',
-          paddingBottom: '12px',
-          height: '30px'
-        },
-        '& .MuiInputLabel-root': {
-          top: 'calc(50% - 6px)', // Center label vertically
-        },
-        '& .MuiOutlinedInput-root': {
-          paddingTop: '16px',
-          paddingBottom: '16px',
-        },
-      }}
-    >
-      {fieldOptions
-        .filter(field => !record.showFields.includes(field))
-        .map(field => (
-          <MenuItem key={field} value={field}>
-            {field.replace('_', ' ')}
-          </MenuItem>
+    <Container maxWidth="md">
+      <Typography variant="h4" align="center" gutterBottom sx={{ mt: 4 }}>
+        Create Issue Tracker
+      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <StyledButton
+          onClick={navigateToList}
+          startIcon={<ListIcon />}
+        >
+          Go to List
+        </StyledButton>
+      </Box>
+      <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
         ))}
-    </Select>
-  </FormControl>
-  <Button
-    type="button"
-    onClick={() => handleAddField(index)}
-    sx={{
-        backgroundColor: '#FFE600', // Yellow background by default
-        color: '#262b3b', // Black text color by default
-        borderRadius: '20px', // Rounded corners
-        padding: '6px 12px', // Padding
-        borderColor: '#262b3b', // Black border
-        borderWidth: '1px', // Thin border
-        borderStyle: 'solid', // Solid border style
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Shadow effect
-        textTransform: 'none',
-        '&:hover': {
-            backgroundColor: '#ffffff', // White background on hover
-            color: '#262b3b', // Black text color on hover
-            borderColor: '#262b3b', // Black border on hover
-            boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
-        },
-        border: 'none', // Remove default border
-        cursor: 'pointer', // Pointer cursor on hover
-        width: 'auto', // Auto width
-        marginTop: '16px', // Margin top
-    }}
->
-    Add Field
-</Button>
-
-</div>
-
-
-
-                {record.showFields.map((field, idx) => (
-                  <div key={idx} className="mb-4">
-                    <TextField
-                      label={field.replace('_', ' ')}
-                      name={field}
-                      value={record[field] || ''}
-                      onChange={(e) => handleChange(index, e)}
-                      fullWidth
-                      variant="outlined"
-                    />
-                  </div>
-                ))}
-
-                <div className="mb-4">
-                <FormControl fullWidth variant="outlined">
-  <InputLabel id="responsible-person-label">Responsible Person</InputLabel>
-  <Select
-    labelId="responsible-person-label"
-    name="responsible_person_id"
-    value={record.responsible_person_id || ''}
-    onChange={(e) => handleSelectChange(index, e)}
-    label="Responsible Person"
-    MenuProps={{
-      PaperProps: {
-        style: {
-          maxHeight: 200, // Adjust max height as needed
-        },
-      },
-    }}
-    sx={{
-      '& .MuiSelect-select': {
-        paddingTop: '12px',
-        paddingBottom: '12px',
-        height: '30px'
-      },
-      '& .MuiInputLabel-root': {
-        top: 'calc(50% - 6px)', // Center label vertically
-      },
-      '& .MuiOutlinedInput-root': {
-        paddingTop: '16px',
-        paddingBottom: '16px',
-      },
-    }}
-  >
-    <MenuItem value="">Select Responsible Person</MenuItem>
-    {users.filter(user => user.full_name !== 'Super Admin').map(user => (
-      <MenuItem key={user.id} value={user.id}>{user.full_name}</MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
-                </div>
-
-                <div className="mb-4">
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name="follow_up_required"
-                        checked={record.follow_up_required}
-                        onChange={(e) => handleChange(index, e)}
-                      />
-                    }
-                    label="Follow Up Required"
-                  />
-                </div>
-
-                <Button
-    type="button"
-    onClick={() => handleRemoveRecord(index)}
-    sx={{
-        backgroundColor: '#FFE600', // Yellow background by default
-        color: '#262b3b', // Black text color by default
-        borderRadius: '20px', // Rounded corners
-        padding: '6px 12px', // Padding
-        borderColor: '#262b3b', // Black border
-        borderWidth: '1px', // Thin border
-        borderStyle: 'solid', // Solid border style
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Shadow effect
-        textTransform: 'none',
-        '&:hover': {
-            backgroundColor: '#ffffff', // White background on hover
-            color: '#262b3b', // Black text color on hover
-            borderColor: '#262b3b', // Black border on hover
-            boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
-        },
-        border: 'none', // Remove default border
-        cursor: 'pointer', // Pointer cursor on hover
-        width: 'auto', // Auto width
-    }}
->
-    Remove Record
-</Button>
-
-              </>
+      </Stepper>
+      <StyledPaper elevation={3}>
+        <form onSubmit={(e) => e.preventDefault()}>
+          {renderStepContent(activeStep)}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+            <StyledButton
+              onClick={handleBack}
+              disabled={activeStep === 0}
+              startIcon={<ArrowBack />}
+            >
+              Back
+            </StyledButton>
+            {activeStep === steps.length - 1 ? (
+              <StyledButton
+                onClick={handleSubmit}
+                variant="contained"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </StyledButton>
+            ) : (
+              <StyledButton
+                onClick={handleNext}
+                variant="contained"
+                endIcon={<ArrowForward />}
+              >
+                Next
+              </StyledButton>
             )}
-          </div>
-        ))}
-
-        <div className="flex justify-between items-center mb-6">
-        <Button
-    type="button"
-    onClick={handleAddRecord}
-    sx={{
-        backgroundColor: '#FFE600', // Yellow background by default
-        color: '#262b3b', // Black font color by default
-        borderRadius: '20px', // Rounded corners
-        padding: '6px 12px', // Padding
-        borderColor: '#262b3b', // Black border
-        borderWidth: '1px', // Thin border
-        borderStyle: 'solid', // Solid border style
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Shadow effect
-        textTransform: 'none',
-        '&:hover': {
-            backgroundColor: '#ffffff', // White background on hover
-            color: '#262b3b', // Black font color on hover
-            borderColor: '#262b3b', // Black border on hover
-            boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
-        },
-        border: 'none', // Remove default border
-        cursor: 'pointer', // Pointer cursor on hover
-        width: 'auto', // Auto width
-    }}
->
-    Add Record
-</Button>
-
-<Button
-    type="submit"
-    sx={{
-        backgroundColor: '#FFE600', // Yellow background by default
-        color: '#262b3b', // Black text color by default
-        borderRadius: '20px', // Rounded corners
-        padding: '6px 12px', // Padding
-        borderColor: '#262b3b', // Black border
-        borderWidth: '1px', // Thin border
-        borderStyle: 'solid', // Solid border style
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Shadow effect
-        textTransform: 'none',
-        '&:hover': {
-            backgroundColor: '#ffffff', // White background on hover
-            color: '#262b3b', // Black text color on hover
-            borderColor: '#262b3b', // Black border on hover
-            boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
-        },
-        border: 'none', // Remove default border
-        cursor: 'pointer', // Pointer cursor on hover
-        width: 'auto', // Auto width
-    }}
->
-    Save Tracker
-</Button>
-
-        </div>
-      </form>
-
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <MuiAlert onClose={handleCloseSnackbar} severity="info" sx={{ width: '100%', bgcolor: 'black', color: 'white' }}>
+          </Box>
+        </form>
+      </StyledPaper>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
-        </MuiAlert>
+        </Alert>
       </Snackbar>
-    </div>
+    </Container>
   );
 };
 
-export default MoMForm;
+export default ModernFlexibleMoMForm;

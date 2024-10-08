@@ -3,14 +3,14 @@ import axiosInstance from '../utils/axiosInstance'; // Adjust the import path as
 
 const UpcomingContents = () => {
   const [events, setEvents] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [divisions, setDivisions] = useState([]);
+  const [selectedDivision, setSelectedDivision] = useState('');
 
   // Fetch departments
   const fetchDepartments = async () => {
     try {
       const response = await axiosInstance.get('api/department-userwise/');
-      setDepartments(response.data);
+      setDivisions(response.data.divisions);
     } catch (error) {
       console.error('Error fetching departments:', error);
     }
@@ -32,21 +32,21 @@ const UpcomingContents = () => {
   }, []);
 
   // Derive unique department names
-  const uniqueDepartments = useMemo(() => {
-    if (!Array.isArray(departments)) return [];
-    return departments.map(department => department.name);
-  }, [departments]);
+  const uniqueDivisions = useMemo(() => {
+    if (!Array.isArray(divisions)) return [];
+    return divisions.map(division => division.name);
+  }, [divisions]);
 
   // Filter events based on the selected department
   const filteredEvents = useMemo(() => {
     if (!Array.isArray(events)) return [];
     return events.filter(event =>
-      !selectedDepartment || event.department_name === selectedDepartment
+      !selectedDivision || event.division_name === selectedDivision
     );
-  }, [events, selectedDepartment]);
+  }, [events, selectedDivision]);
 
-  const handleDepartmentChange = (event) => {
-    setSelectedDepartment(event.target.value);
+  const handleDivisionChange = (event) => {
+    setSelectedDivision(event.target.value);
   };
 
   return (
@@ -54,18 +54,18 @@ const UpcomingContents = () => {
       <h2 className="text-xl font-semibold mb-4">Upcoming Contents</h2>
       <div className="mb-4">
         <label htmlFor="departmentFilter" className="block text-sm font-medium text-gray-700">
-          Filter by Department:
+          Filter by Division:
         </label>
         <select
         id="departmentFilter"
         name="departmentFilter"
         className="p-2 border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        value={selectedDepartment}
-        onChange={handleDepartmentChange}
+        value={selectedDivision}
+        onChange={handleDivisionChange}
       >
-        <option value="">All Departments</option>
-        {departments
-          .map(department => department.name) 
+        <option value="">All Divisions</option>
+        {divisions
+          .map(division => division.name) 
           .filter(name => name !== 'Super Department') 
           .map((dept, index) => (
             <option key={index} value={dept}>{dept}</option>

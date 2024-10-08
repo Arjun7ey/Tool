@@ -1,105 +1,141 @@
 import React, { useEffect, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
-import { Chart, registerables } from 'chart.js';
+import { Box, Typography, CircularProgress, Grid } from '@mui/material';
+import { motion } from 'framer-motion';
+import { styled } from '@mui/system';
 import axiosInstance from '../utils/axiosInstance';
 
-// Register all necessary components with Chart.js
-Chart.register(...registerables);
+const DashboardContainer = styled(Box)({
+  padding: '40px 20px',
+  background: '#e0e5ec',
+  borderRadius: '20px',
+  minHeight: '100vh',
+  overflow: 'hidden',
+});
 
-const BarGraph = () => {
-    const [chartData, setChartData] = useState(null);  // Initialize as null
-    const [error, setError] = useState(null);
+const NeumorphicCard = styled(motion.div)({
+  background: '#FFE600',
+  borderRadius: '15px',
+  padding: '25px',
+  boxShadow: '8px 8px 15px #a3b1c6, -8px -8px 15px #ffffff',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  height: '100%',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    boxShadow: '12px 12px 20px #a3b1c6, -12px -12px 20px #ffffff',
+  },
+});
 
-    useEffect(() => {
-        axiosInstance.get('/api/media-stats/')
-            .then((response) => {
-                const data = response.data;
-                
-                // Mapping of real department names to display names
-                const departmentMapping = {
-                    'Digital Bharat Nidhi': 'Digital Bharat Nidhi',
-                    'BSNL': 'BSNL',
-                    'NBM': 'NBM'
-                };
+const StatValue = styled(Typography)({
+  fontSize: '2.5rem',
+  fontWeight: '700',
+  color: '#262b3b',
+  marginBottom: '10px',
+});
 
-                // Initialize arrays for chart data
-                const weeklyImages = [];
-                const weeklyApprovedImages = [];
-                const weeklyVideos = [];
-                const weeklyApprovedVideos = [];
-                const displayLabels = [];
+const StatLabel = styled(Typography)({
+  fontSize: '1rem',
+  fontWeight: '500',
+  color: '#262b3b',
+  marginBottom: '5px',
+});
 
-                // Fetch data by real department names and use mapped display names
-                Object.keys(departmentMapping).forEach(realDeptName => {
-                    const deptData = data[realDeptName]?.weekly_data || {
-                        total_images: 0,
-                        approved_images: 0,
-                        total_videos: 0,
-                        approved_videos: 0,
-                    };
+const ProgressBar = styled(Box)({
+  height: '6px',
+  background: '#d1d9e6',
+  borderRadius: '3px',
+  marginTop: '10px',
+  position: 'relative',
+  overflow: 'hidden',
+});
 
-                    weeklyImages.push(deptData.total_images);
-                    weeklyApprovedImages.push(deptData.approved_images);
-                    weeklyVideos.push(deptData.total_videos);
-                    weeklyApprovedVideos.push(deptData.approved_videos);
+const ProgressFill = styled(motion.div)(({ color }) => ({
+  height: '100%',
+  borderRadius: '3px',
+  background: '#262b3b',
+}));
 
-                    // Add the display name to the labels
-                    displayLabels.push(departmentMapping[realDeptName]);
-                });
+const MinimalistDashboard = () => {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
 
-                setChartData({
-                    labels: displayLabels,
-                    datasets: [
-                        {
-                            label: 'Weekly Images',
-                            data: weeklyImages,
-                            backgroundColor: 'rgba(75, 192, 227, 0.6)',
-                        },
-                        {
-                            label: 'Weekly Approved Images',
-                            data: weeklyApprovedImages,
-                            backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                        },
-                        {
-                            label: 'Weekly Videos',
-                            data: weeklyVideos,
-                            backgroundColor: 'rgba(213, 218, 254, 0.6)',
-                        },
-                        {
-                            label: 'Weekly Approved Videos',
-                            data: weeklyApprovedVideos,
-                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        }
-                    ]
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching the data:', error);
-                setError('Error fetching the data');
-            });
-    }, []);
+  useEffect(() => {
+    axiosInstance.get('/api/media-stats/')
+      .then((response) => {
+        setData(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching the data:', error);
+        setError('Error fetching the data');
+      });
+  }, []);
 
+  if (error) {
+    return <Typography color="error" variant="h6">{error}</Typography>;
+  }
+
+  if (!data) {
     return (
-        <div>
-            {error ? (
-                <p>{error}</p>
-            ) : (
-                chartData && (
-                    <Bar
-                        data={chartData}
-                        options={{
-                            responsive: true,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                },
-                            },
-                        }}
-                    />
-                )
-            )}
-        </div>
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  const departments = ['Digital Bharat Nidhi', 'BSNL', 'NBM'];
+  const colors = ['#4A90E2', '#50E3C2', '#F5A623'];
+
+  return (
+    <DashboardContainer>
+      <Typography variant="h4" sx={{ mb: 4, color: '#1a1a1a', fontWeight: '700', textAlign: 'center' }}>
+        Media Statistics
+      </Typography>
+      <Grid container spacing={4}>
+        {departments.map((dept, index) => (
+          <Grid item xs={12} md={4} key={dept}>
+            <NeumorphicCard
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Box>
+                <Typography variant="h6" fontWeight="600" mb={3} color="#333">{dept}</Typography>
+                <StatValue>{data[dept].weekly_data.total_images}</StatValue>
+                <StatLabel>Total Images</StatLabel>
+                <ProgressBar>
+                  <ProgressFill
+                    color={colors[index]}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(data[dept].weekly_data.approved_images / data[dept].weekly_data.total_images) * 100}%` }}
+                    transition={{ duration: 1 }}
+                  />
+                </ProgressBar>
+                <Typography variant="body2" mt={1} color="#666">
+                  {data[dept].weekly_data.approved_images} Approved
+                </Typography>
+              </Box>
+              <Box mt={4}>
+                <StatValue>{data[dept].weekly_data.total_videos}</StatValue>
+                <StatLabel>Total Videos</StatLabel>
+                <ProgressBar>
+                  <ProgressFill
+                    color={colors[index]}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(data[dept].weekly_data.approved_videos / data[dept].weekly_data.total_videos) * 100}%` }}
+                    transition={{ duration: 1 }}
+                  />
+                </ProgressBar>
+                <Typography variant="body2" mt={1} color="#666">
+                  {data[dept].weekly_data.approved_videos} Approved
+                </Typography>
+              </Box>
+            </NeumorphicCard>
+          </Grid>
+        ))}
+      </Grid>
+    </DashboardContainer>
+  );
 };
 
-export default BarGraph;
+export default MinimalistDashboard;

@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { Typography, Box, InputBase, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Typography, Box, InputBase, IconButton, Snackbar } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import '../Components/Styles/LoginStyle.css'; // Ensure styles are still imported
+import '../Components/Styles/LoginStyle.css';
 import ey from '../assets/images/logo/ey.png';
 import loginobject from '../assets/images/logo/loginobject.svg';
 import axiosInstance from '../Components/utils/axiosInstance';
 import { useAuth } from '../Components/utils/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { BASE_URL } from '../config';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -16,44 +17,80 @@ const Login = () => {
     const [buttonClass, setButtonClass] = useState('');
     const [error, setError] = useState('');
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
     const { fetchUserData } = useAuth();
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const fetchCsrfToken = async () => {
+            try {
+                await axiosInstance.get(`${BASE_URL}/api/csrf_cookie/`, { withCredentials: true });
+            } catch (error) {
+                console.error('Error fetching CSRF token:', error);
+                setSnackbarMessage('Error fetching CSRF token. Please try refreshing the page.');
+                setSnackbarOpen(true);
+            }
+        };
+
+        fetchCsrfToken();
+    }, []);
+
     const handleLogin = async (e) => {
         e.preventDefault();
-    
-        // Check if email or password are empty
+
         if (email === '' || password === '') {
-            setError('Please, Enter your email and password');
-            return; // Exit the function if validation fails
+            setError('Please enter your email and password');
+            return;
         }
-    
+
         setError('');
         setButtonClass('button-animation');
-    
+
         try {
             const loginData = { email, password };
-            const response = await axiosInstance.post('/api/login/', loginData);
-    
+            const response = await axiosInstance.post('/api/login/', loginData, {
+                withCredentials: true,
+            });
+
             if (response.status === 200) {
-                const { access, refresh } = response.data;  
-                
+                const { access, refresh } = response.data;
                 localStorage.setItem('access_token', access);
                 localStorage.setItem('refresh_token', refresh);
-    
-                // Fetch user data and navigate to dashboard
                 await fetchUserData();
-                navigate('/images');
+                navigate('/dashboard');
             } else {
                 setError('Invalid credentials');
             }
         } catch (error) {
-            setError('Error during login: Invalid credentials');
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                if (error.response.status === 403) {
+                    setError('You are already logged in on another browser. Please log out there first.');
+                } else if (error.response.data && error.response.data.detail) {
+                    setError(error.response.data.detail);
+                } else {
+                    setError('An error occurred during login. Please try again.');
+                }
+            } else if (error.request) {
+                // The request was made but no response was received
+                setError('No response received from server. Please check your internet connection.');
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                setError('An unexpected error occurred. Please try again.');
+            }
             console.error('Error during login:', error);
         } finally {
-            // Ensure button animation is removed regardless of success or failure
             setButtonClass('');
         }
+    };
+
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbarOpen(false);
     };
 
     return (
@@ -120,12 +157,19 @@ const Login = () => {
                             className={`login-btn ${buttonClass}`}
                             style={{ width: '100%', backgroundColor: '#F4B400', color: 'white', fontWeight: 'bold', padding: '10px', border: 'none', cursor: 'pointer' }}
                         />
-                        <div className="login-wrapper">
-                            {/* Additional content */}
-                        </div>
                     </form>
                 </Box>
             </div>
+            <Snackbar
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center',
+                }}
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={handleSnackbarClose}
+                message={snackbarMessage}
+            />
         </div>
     );
 };

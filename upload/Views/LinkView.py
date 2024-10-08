@@ -153,6 +153,7 @@ class LinkUploadView(APIView):
                     'id': new_link.id,
                     'rating': new_link.rating,
                     'image_url': new_link.image.url if new_link.image else None,
+                    'status': new_link.status
                    
                 }
             }

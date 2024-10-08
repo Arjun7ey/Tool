@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../../config';
+
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,  // Replace with your backend URL
-  timeout: 5000,  // Timeout if API request takes longer than 5 seconds
+  baseURL: BASE_URL,
+  timeout: 50000,
 });
 
 // Request interceptor to add tokens to request headers
@@ -20,53 +20,45 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
-  error => {
-    return Promise.reject(error);
-  }
+  error => Promise.reject(error)
 );
 
-// Response interceptor to handle token refresh
-axiosInstance.interceptors.response.use(
-  response => response,
-  async error => {
-    const originalRequest = error.config;
-    const navigate = useNavigate(); // Hook to navigate
+// Function to setup response interceptor
+export const setupResponseInterceptor = (navigate) => {
+  axiosInstance.interceptors.response.use(
+    response => response,
+    async error => {
+      const originalRequest = error.config;
 
-    // Check if the error status is 401 (Unauthorized) and if the request has not been retried
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+      if (error.response && error.response.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
 
-      try {
-        // Attempt to refresh the token
-        const refreshToken = localStorage.getItem('refresh_token');
-        const response = await axiosInstance.post('/api/token/refresh/', {
-          refresh: refreshToken
-        });
+        try {
+          const refreshToken = localStorage.getItem('refresh_token');
+          const response = await axiosInstance.post('/api/token/refresh/', {
+            refresh: refreshToken
+          });
 
-        // Save the new access token
-        localStorage.setItem('access_token', response.data.access);
-        localStorage.setItem('refresh_token', response.data.refresh);
+          localStorage.setItem('access_token', response.data.access);
+          localStorage.setItem('refresh_token', response.data.refresh);
 
-        // Retry the original request with the new access token
-        axiosInstance.defaults.headers['Authorization'] = `Bearer ${response.data.access}`;
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // Handle token refresh errors
-        console.error('Token refresh failed', refreshError);
-        
-        // Redirect to login or home page
-        navigate('/'); // Redirect to home or login page
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('csrf_token');
-        
-        return Promise.reject(refreshError);
+          axiosInstance.defaults.headers['Authorization'] = `Bearer ${response.data.access}`;
+          return axiosInstance(originalRequest);
+        } catch (refreshError) {
+          console.error('Token refresh failed', refreshError);
+          
+          navigate('/'); // Redirect to home or login page
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('csrf_token');
+          
+          return Promise.reject(refreshError);
+        }
       }
-    }
 
-    // If not a 401 error or if retry failed, reject the promise
-    return Promise.reject(error);
-  }
-);
+      return Promise.reject(error);
+    }
+  );
+};
 
 export default axiosInstance;

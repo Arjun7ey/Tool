@@ -104,6 +104,7 @@ class DocumentUploadView(APIView):
                     'file': new_document.docfile.url,
                     'title': new_document.title,
                     'rating': new_document.rating,
+                     'status': new_document.status
                     
                 }
             }

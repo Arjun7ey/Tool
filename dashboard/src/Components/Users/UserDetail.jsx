@@ -1,391 +1,297 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Typography,
-  Paper,
-  Grid,
-  List,
-  ListItem,
-  Button,
-  Switch,
-  FormControlLabel,
-  Avatar,
-  IconButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  Snackbar,
-  Alert,
+  Container, Typography, Box, Grid, List, ListItem, ListItemText,
+  Avatar, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
+  Snackbar, Alert, Chip, useTheme, CircularProgress, Switch, Button
 } from '@mui/material';
-import { Edit } from '@mui/icons-material';
+import { styled } from '@mui/system';
+import { 
+  Edit, LocationOn, Email, Phone, Work, School, PhotoCamera
+} from '@mui/icons-material';
 import axiosInstance from '../utils/axiosInstance';
 import { useAuth } from '../utils/AuthContext';
 import { useParams } from 'react-router-dom';
-import { BASE_URL } from '../../config';
 
-const UserDetail = () => {
-  const { userData } = useAuth();
+const YellowBox = styled(Box)(({ theme }) => ({
+  background: '#FFD700',
+  borderRadius: '10px',
+  padding: '24px',
+  color: '#000000',
+  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+}));
+
+const BlackBox = styled(Box)(({ theme }) => ({
+  background: '#333333',
+  borderRadius: '10px',
+  padding: '24px',
+  color: '#FFFFFF',
+  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+}));
+
+const StyledAvatar = styled(Avatar)({
+  width: '150px',
+  height: '150px',
+  border: '4px solid #FFD700',
+});
+
+const StyledChip = styled(Chip)({
+  backgroundColor: '#FFD700',
+  color: '#000000',
+  '&:hover': {
+    backgroundColor: '#FFC000',
+  },
+});
+
+const UltraModernUserDetail = () => {
+  const theme = useTheme();
   const { id } = useParams();
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState({});
-  const [updatedPermissions, setUpdatedPermissions] = useState({});
-  const [editMode, setEditMode] = useState(false);
-  const [newProfilePicture, setNewProfilePicture] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [formValues, setFormValues] = useState({
-    username: '',
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [editForm, setEditForm] = useState({
+    full_name: '',
     email: '',
-    phoneNumber: '',
-    aboutMe: '',  // Add aboutMe field
+    phone_number: '',
+    about_me: '',
   });
 
   useEffect(() => {
-    axiosInstance.get(`/api/users/${id}/`)
-      .then((response) => {
-        setUser(response.data);
-        setFormValues({
-          username: response.data.username || '',
-          email: response.data.email || '',
-          phoneNumber: response.data.phone_number || '',
-          aboutMe: response.data.about_me || '',  // Fetch aboutMe field
+    const fetchUserData = async () => {
+      try {
+        const [userResponse, permissionsResponse] = await Promise.all([
+          axiosInstance.get(`/api/users/${id}/`),
+          axiosInstance.get(`/api/users/${id}/permissions/`)
+        ]);
+
+        setUser(userResponse.data);
+        setPermissions(permissionsResponse.data);
+        setEditForm({
+          full_name: userResponse.data.full_name,
+          email: userResponse.data.email,
+          phone_number: userResponse.data.phone_number,
+          about_me: userResponse.data.about_me,
         });
-      })
-      .catch((error) => {
-        console.error('Error fetching user details:', error);
-      });
-
-    axiosInstance.get(`/api/users/${id}/permissions/`)
-      .then((response) => {
-        if (typeof response.data === 'object' && response.data !== null) {
-          setPermissions(response.data);
-          setUpdatedPermissions(response.data);
-        } else {
-          console.error('Unexpected permissions data format:', response.data);
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching user permissions:', error);
-      });
-  }, [id]);
-
-  useEffect(() => {
-    if (newProfilePicture) {
-      const imageUrl = URL.createObjectURL(newProfilePicture);
-      setPreviewImage(imageUrl);
-      setPreviewDialogOpen(true);
-    }
-    return () => {
-      if (previewImage) {
-        URL.revokeObjectURL(previewImage);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setError('Failed to load user data. Please try again later.');
+        setLoading(false);
       }
     };
-  }, [newProfilePicture]);
 
-  const handlePermissionChange = (permission) => (event) => {
-    setUpdatedPermissions(prevPermissions => ({
-      ...prevPermissions,
-      [permission]: event.target.checked,
-    }));
-  };
+    fetchUserData();
+  }, [id]);
 
-  const handleSavePermissions = () => {
-    const payload = {
-      permissions: updatedPermissions,
-    };
+  const handleEditClick = () => setDialogOpen(true);
+  const handleDialogClose = () => setDialogOpen(false);
 
-    axiosInstance.patch(`/api/users/${id}/permissions/update/`, payload)
-      .then(() => {
-        setPermissions(updatedPermissions);
-        setEditMode(false);
-        setSnackbarMessage('Permissions updated successfully');
-        setSnackbarOpen(true);
-      })
-      .catch((error) => {
-        console.error('Error updating permissions:', error);
-        setSnackbarMessage('Error updating permissions');
-        setSnackbarOpen(true);
+  const handlePermissionChange = (permission) => async (event) => {
+    try {
+      const newValue = event.target.checked;
+      await axiosInstance.patch(`/api/users/${id}/permissions/update/`, {
+        permissions: { [permission]: newValue }
       });
-  };
-
-  const handleProfilePictureChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setNewProfilePicture(file);
+      setPermissions(prev => ({ ...prev, [permission]: newValue }));
+      setSnackbarMessage('Permission updated successfully');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      setSnackbarMessage('Error updating permission');
+      setSnackbarOpen(true);
     }
   };
 
-  const handleCancelProfilePicture = () => {
-    setNewProfilePicture(null);
-    setPreviewImage(null);
-    setPreviewDialogOpen(false);
-  };
-
-  const uploadProfilePicture = () => {
-    const formData = new FormData();
-    formData.append('profile_picture', newProfilePicture);
-
-    axiosInstance.post(`/api/users/${id}/upload-profile-picture/`, formData)
-      .then(response => {
-        const updatedProfilePicture = response.data.profile_picture;
-        const fullImageUrl = `${BASE_URL}${updatedProfilePicture}?t=${new Date().getTime()}`;
-        setUser(prevUser => ({
-          ...prevUser,
-          profile_picture: fullImageUrl,
-        }));
-        setNewProfilePicture(null);
-        setPreviewImage(null);
-        setPreviewDialogOpen(false);
-      })
-      .catch(error => {
-        console.error('Error uploading profile picture:', error);
-      });
-  };
-
-  const handleDialogOpen = () => {
-    setDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
-
-  const handleFormChange = (event) => {
+  const handleEditFormChange = (event) => {
     const { name, value } = event.target;
-    setFormValues(prevValues => ({
-      ...prevValues,
-      [name]: value,
-    }));
+    setEditForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveDetails = () => {
-    const { username, email, phoneNumber, aboutMe } = formValues;
-    axiosInstance.patch(`/api/users/${id}/update-details/`, {
-      username,
-      email,
-      phone_number: phoneNumber,
-      about_me: aboutMe,  // Include aboutMe field
-    })
-      .then(() => {
-        setUser(prevUser => ({
-          ...prevUser,
-          username,
-          email,
-          phone_number: phoneNumber,
-          about_me: aboutMe,  // Update aboutMe field
-        }));
-        handleDialogClose();
-        setSnackbarMessage('Details updated successfully');
-        setSnackbarOpen(true);
-      })
-      .catch((error) => {
-        console.error('Error updating user details:', error);
-        setSnackbarMessage('Error updating details');
-        setSnackbarOpen(true);
-      });
+  const handleSaveEdit = async () => {
+    try {
+      const response = await axiosInstance.patch(`/api/users/${id}/update-details/`, editForm);
+      setUser(prev => ({ ...prev, ...response.data }));
+      setDialogOpen(false);
+      setSnackbarMessage('User details updated successfully');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Error updating user details:', error);
+      setSnackbarMessage('Error updating user details');
+      setSnackbarOpen(true);
+    }
   };
 
-  if (!user) {
-    return <div>Loading...</div>;
+  const handleProfilePictureChange = async (event) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const formData = new FormData();
+      formData.append('profile_picture', file);
+
+      try {
+        const response = await axiosInstance.post(`/api/users/${id}/upload-profile-picture/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setUser(prev => ({ ...prev, profile_picture: response.data.profile_picture }));
+        setSnackbarMessage('Profile picture updated successfully');
+        setSnackbarOpen(true);
+      } catch (error) {
+        console.error('Error updating profile picture:', error);
+        setSnackbarMessage('Error updating profile picture');
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress style={{ color: '#FFD700' }} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
   }
 
   return (
-    <Container maxWidth="md" style={{ marginTop: '30px' }}>
-      {/* Header Section with Darker Color */}
-      <Paper elevation={3} style={{
-        position: 'relative',
-        backgroundColor: '#FFC107', // Yellow color
-        color: '#000', // Black text
-        padding: '20px', // Reduced padding for a shorter header
-        borderRadius: '12px',
-        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
-        marginBottom: '30px',
-        maxWidth: '800px',
-        margin: 'auto',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h3" style={{ fontWeight: 'bold', color: '#000' }}>
-            {user.full_name}
-          </Typography>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar
-              alt="Profile Picture"
-              src={user.profile_picture}
-              style={{
-                width: 120,  // Reduced size for a shorter header
-                height: 120, // Reduced size for a shorter header
-                border: '4px solid #FFF', // White border
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-                borderRadius: '50%',
-              }}
-            />
-            <IconButton
-              style={{
-                marginLeft: '-25px',
-                backgroundColor: '#FFF',
-                borderRadius: '50%',
-                border: '2px solid #ddd',
-                boxShadow: '0 3px 6px rgba(0, 0, 0, 0.2)',
-              }}
-              onClick={() => document.getElementById('profile-picture-input').click()}
-            >
-              <Edit style={{ color: '#FFC107' }} /> {/* Yellow icon */}
-            </IconButton>
-            <input
-              id="profile-picture-input"
-              type="file"
-              style={{ display: 'none' }}
-              onChange={handleProfilePictureChange}
-            />
-          </div>
-        </div>
-      </Paper>
-  
-      {/* Profile Information */}
-      <Paper elevation={3} style={{
-        padding: '30px',
-        borderRadius: '12px',
-        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.2)',
-        maxWidth: '800px',
-        margin: 'auto',
-        backgroundColor: '#FFF', // White background
-      }}>
-        <Typography variant="h4" gutterBottom style={{ fontWeight: 'bold', marginBottom: '20px', color: '#000' }}>
-          User Details
-        </Typography>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="body2" style={{ color: '#000', fontWeight: 'bold', marginBottom: '8px' }}>
-              Username:
-            </Typography>
-            <Typography variant="body1" style={{ backgroundColor: '#FFF', padding: '12px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', color: '#000' }}>
-              {user.username}
-            </Typography>
-            <Typography variant="body2" style={{ color: '#000', fontWeight: 'bold', marginBottom: '8px' }}>
-              Email:
-            </Typography>
-            <Typography variant="body1" style={{ backgroundColor: '#FFF', padding: '12px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', color: '#000' }}>
-              {user.email}
-            </Typography>
-            <Typography variant="body2" style={{ color: '#000', fontWeight: 'bold', marginBottom: '8px' }}>
-              Phone Number:
-            </Typography>
-            <Typography variant="body1" style={{ backgroundColor: '#FFF', padding: '12px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', color: '#000' }}>
-              {user.phone_number}
-            </Typography>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <YellowBox mb={4}>
+        <Grid container spacing={3} alignItems="center">
+          <Grid item>
+            <Box position="relative">
+              <StyledAvatar src={user.profile_picture} alt={user.full_name} />
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="icon-button-file"
+                type="file"
+                onChange={handleProfilePictureChange}
+              />
+              <label htmlFor="icon-button-file">
+                <IconButton
+                  color="primary"
+                  aria-label="upload picture"
+                  component="span"
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: '#000000',
+                    color: '#FFD700',
+                  }}
+                >
+                  <PhotoCamera />
+                </IconButton>
+              </label>
+            </Box>
           </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="body2" style={{ color: '#000', fontWeight: 'bold', marginBottom: '8px' }}>
-              About Me:
-            </Typography>
-            <Typography variant="body1" style={{ backgroundColor: '#FFF', padding: '12px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', color: '#000' }}>
-              {user.about_me}
-            </Typography>
+          <Grid item xs>
+            <Typography variant="h3" gutterBottom style={{ color: '#000000' }}>{user.full_name}</Typography>
+            <Typography variant="h6" gutterBottom style={{ color: '#000000' }}>@{user.username}</Typography>
+            <Box display="flex" gap={1} flexWrap="wrap" mt={2}>
+            
+              <StyledChip icon={<LocationOn />} label="New Delhi, India" />
+            </Box>
+          </Grid>
+          <Grid item>
+            <IconButton onClick={handleEditClick} style={{ color: '#000000' }}>
+              <Edit />
+            </IconButton>
           </Grid>
         </Grid>
-        <Button
-  variant="contained"
-  style={{
-    backgroundColor: '#FFC107', // Yellow color
-    color: '#000', // Black text
-    marginTop: '20px',
-    '&:hover': {
-      backgroundColor: '#FFB300', // Darker yellow for hover effect
-    }
-  }}
-  onClick={handleDialogOpen}
->
-  Edit Details
-</Button>
+      </YellowBox>
 
-      </Paper>
-  
-      {/* Permissions Section */}
-      <Paper elevation={3} style={{
-        padding: '30px',
-        borderRadius: '12px',
-        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.2)',
-        maxWidth: '800px',
-        margin: 'auto',
-        marginTop: '30px',
-        backgroundColor: '#FFF', // White background
-      }}>
-        <Typography variant="h4" gutterBottom style={{ fontWeight: 'bold', marginBottom: '20px', color: '#000' }}>
-          User Permissions
-        </Typography>
-        {editMode ? (
-          <>
+      <Grid container spacing={4}>
+        <Grid item xs={12} md={6}>
+          <BlackBox>
+            <Typography variant="h5" gutterBottom style={{ color: '#FFD700' }}>Contact Information</Typography>
             <List>
-              {Object.keys(permissions).map((permission) => (
-                <ListItem key={permission} style={{ padding: '10px 0' }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={updatedPermissions[permission] || false}
-                        onChange={handlePermissionChange(permission)}
-                        color="primary" // Primary color for switch
-                      />
-                    }
-                    label={permission}
-                    style={{ marginRight: '20px', color: '#000' }}
-                  />
-                </ListItem>
-              ))}
+              <ListItem>
+                <ListItemText 
+                  primary={user.email} 
+                  secondary="Email"
+                  primaryTypographyProps={{ style: { color: '#FFFFFF' } }}
+                  secondaryTypographyProps={{ style: { color: '#FFD700' } }}
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary={user.phone_number} 
+                  secondary="Phone"
+                  primaryTypographyProps={{ style: { color: '#FFFFFF' } }}
+                  secondaryTypographyProps={{ style: { color: '#FFD700' } }}
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary={user.role || 'User'} 
+                  secondary="Role"
+                  primaryTypographyProps={{ style: { color: '#FFFFFF' } }}
+                  secondaryTypographyProps={{ style: { color: '#FFD700' } }}
+                />
+              </ListItem>
             </List>
-            <Button
-              variant="contained"
-              color="secondary" // Yellow color button
-              onClick={handleSavePermissions}
-              style={{ marginRight: '20px' }}
-            >
-              Save Permissions
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary" // Yellow color outlined button
-              onClick={() => setEditMode(false)}
-            >
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <Button
-          variant="contained"
-          style={{
-            backgroundColor: '#FFC107', // Yellow color
-            color: '#000', // Black text
-            marginTop: '20px',
-            '&:hover': {
-              backgroundColor: '#FFB300', // Darker yellow for hover effect
-            }
-          }}
-          onClick={() => setEditMode(true)}
-        >
-          Edit Permissions
-        </Button>
-        
-        )}
-      </Paper>
+          </BlackBox>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <BlackBox>
+            <Typography variant="h5" gutterBottom style={{ color: '#FFD700' }}>About Me</Typography>
+            <Typography style={{ color: '#FFFFFF' }}>{user.about_me || "No bio available."}</Typography>
+          </BlackBox>
+        </Grid>
+        <Grid item xs={12}>
+          <YellowBox>
+            <Typography variant="h5" gutterBottom style={{ color: '#000000' }}>Permissions</Typography>
+            <Grid container spacing={2}>
+              {Object.entries(permissions).map(([permission, value]) => (
+                <Grid item xs={12} sm={6} md={4} key={permission}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography style={{ color: '#000000' }}>{permission}</Typography>
+                    <Switch
+                      checked={value}
+                      onChange={handlePermissionChange(permission)}
+                      color="primary"
+                    />
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </YellowBox>
+        </Grid>
+      </Grid>
 
-      {/* Dialog for editing user details */}
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>Edit User Details</DialogTitle>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleDialogClose}
+        PaperProps={{
+          style: {
+            backgroundColor: '#FFFFFF',
+            color: '#000000',
+          },
+        }}
+      >
+        <DialogTitle style={{ backgroundColor: '#000000', color: '#FFD700' }}>Edit User Details</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
-            name="username"
-            label="Username"
+            name="full_name"
+            label="Full Name"
             type="text"
             fullWidth
-            variant="standard"
-            value={formValues.username}
-            onChange={handleFormChange}
+            variant="outlined"
+            value={editForm.full_name}
+            onChange={handleEditFormChange}
+            InputLabelProps={{ style: { color: '#000000' } }}
+            InputProps={{ style: { color: '#000000', borderColor: '#000000' } }}
           />
           <TextField
             margin="dense"
@@ -393,61 +299,56 @@ const UserDetail = () => {
             label="Email"
             type="email"
             fullWidth
-            variant="standard"
-            value={formValues.email}
-            onChange={handleFormChange}
+            variant="outlined"
+            value={editForm.email}
+            onChange={handleEditFormChange}
+            InputLabelProps={{ style: { color: '#000000' } }}
+            InputProps={{ style: { color: '#000000', borderColor: '#000000' } }}
           />
           <TextField
             margin="dense"
-            name="phoneNumber"
+            name="phone_number"
             label="Phone Number"
-            type="text"
+            type="tel"
             fullWidth
-            variant="standard"
-            value={formValues.phoneNumber}
-            onChange={handleFormChange}
+            variant="outlined"
+            value={editForm.phone_number}
+            onChange={handleEditFormChange}
+            InputLabelProps={{ style: { color: '#000000' } }}
+            InputProps={{ style: { color: '#000000', borderColor: '#000000' } }}
           />
           <TextField
             margin="dense"
-            name="aboutMe"
+            name="about_me"
             label="About Me"
             type="text"
             fullWidth
             multiline
             rows={4}
-            variant="standard"
-            value={formValues.aboutMe}
-            onChange={handleFormChange}
+            variant="outlined"
+            value={editForm.about_me}
+            onChange={handleEditFormChange}
+            InputLabelProps={{ style: { color: '#000000' } }}
+            InputProps={{ style: { color: '#000000', borderColor: '#000000' } }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Cancel</Button>
-          <Button onClick={handleSaveDetails}>Save</Button>
+        <DialogActions style={{ backgroundColor: '#FFFFFF' }}>
+          <Button onClick={handleDialogClose} style={{ color: '#FFD700' }}>Cancel</Button>
+          <Button onClick={handleSaveEdit} style={{ backgroundColor: '#FFD700', color: '#000000' }}>Save</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for notifications */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarMessage.includes('Error') ? 'error' : 'success'}>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%', backgroundColor: '#FFD700', color: '#000000' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
-
-      {/* Dialog for image preview */}
-      <Dialog open={previewDialogOpen} onClose={handleCancelProfilePicture}>
-        <DialogTitle>Preview Profile Picture</DialogTitle>
-        <DialogContent>
-          <img src={previewImage} alt="Profile Preview" style={{ width: '100%', height: 'auto' }} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelProfilePicture}>Cancel</Button>
-          <Button onClick={uploadProfilePicture} color="primary">
-            Upload
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };
 
-export default UserDetail;
+export default UltraModernUserDetail;

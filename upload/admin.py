@@ -3,8 +3,10 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import Image, Document, User, Post, Department, Event, Content, Survey, Question
 from .models import Tag, Category, Notification, MoM,  MoMRow, Link, Tweet, Engagement, Video
 from django.contrib import admin
-from .models import Conversation, Message
-from .models import Department, Division, SubDivision
+from .models import Conversation, Message, Module, EmailDomainPermission
+from .models import Department, Division, SubDivision, Response
+from django.utils.html import format_html
+from .models import Ticket, TicketUpdate
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
@@ -141,8 +143,13 @@ class EventAdmin(admin.ModelAdmin):
 admin.site.register(Event, EventAdmin)
 
 class SurveyAdmin(admin.ModelAdmin):
-    list_display = ['id','title', 'description']
+    list_display = [field.name for field in Survey._meta.fields]  # Dynamically display all fields
 
+class ResponseAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in Response._meta.fields]  # Dynamically     
+
+
+admin.site.register(Response, ResponseAdmin)
 admin.site.register(Survey, SurveyAdmin)
 
 class QuestionAdmin(admin.ModelAdmin):
@@ -222,3 +229,68 @@ class MessageAdmin(admin.ModelAdmin):
 
 admin.site.register(Conversation, ConversationAdmin)
 admin.site.register(Message, MessageAdmin)
+
+
+@admin.register(Module)
+class ModuleAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')  # Show the ID and name of the module in the admin list
+    search_fields = ('name',)  # Add search capability by module name
+
+# Define the EmailDomainPermission admin to allow managing which modules are allowed for each email domain
+@admin.register(EmailDomainPermission)
+class EmailDomainPermissionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'domain')  # Show the ID and domain in the admin list
+    search_fields = ('domain',)  # Add search capability by domain
+    filter_horizontal = ('allowed_modules',)
+
+
+class TicketUpdateInline(admin.TabularInline):
+    model = TicketUpdate
+    extra = 1
+
+@admin.register(Ticket)
+class TicketAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'status', 'priority', 'created_by', 'assigned_to', 'created_at', 'due_date')
+    list_filter = ('status', 'priority', 'source', 'is_social_media_ticket')
+    search_fields = ('title', 'description', 'created_by__username', 'assigned_to__username')
+    readonly_fields = ('created_at', 'updated_at', 'display_attachment')  # Moved display_attachment to readonly_fields
+    raw_id_fields = ('created_by', 'assigned_to')
+    date_hierarchy = 'created_at'
+    inlines = [TicketUpdateInline]
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'description', 'status', 'priority', 'source')
+        }),
+        ('Dates', {
+            'fields': ('created_at', 'updated_at', 'due_date')
+        }),
+        ('Users', {
+            'fields': ('created_by', 'assigned_to')
+        }),
+        ('Social Media', {
+            'fields': ('is_social_media_ticket', 'social_media_platform', 'social_media_post_id', 'social_media_post_url'),
+            'classes': ('collapse',),
+        }),
+        ('Attachment', {
+            'fields': ('attachment',)
+        }),
+    )
+
+    def display_attachment(self, obj):
+        if obj.attachment:
+            return format_html('<a href="{}" target="_blank"><img src="{}" width="150" height="150" /></a>', obj.attachment.url, obj.attachment.url)
+        return "No attachment"
+    display_attachment.short_description = 'Attachment Preview'
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+@admin.register(TicketUpdate)
+class TicketUpdateAdmin(admin.ModelAdmin):
+    list_display = ('id', 'ticket', 'user', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('ticket__title', 'user__username', 'content')
+    raw_id_fields = ('ticket', 'user')

@@ -176,6 +176,7 @@ class VideoUploadView(APIView):
                     'id': new_video.id,
                     'rating': new_video.rating,
                     'video_url': new_video.video.url if new_video.video else None,
+                    'status':new_video.status
                    
                 }
             }

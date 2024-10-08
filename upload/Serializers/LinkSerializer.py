@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
-from upload.models import Department
+from upload.models import Department, Division,SubDivision
 from rest_framework.response import Response
 from upload.models import Tag, Link
 from upload.models import Category
@@ -38,14 +38,28 @@ class LinkUploadSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         category_name = validated_data.pop('category_name', None)
         department_name = validated_data.pop('department_name', None)
+        division_name = validated_data.pop('division_name', None)
+        subdivision_name = validated_data.pop('subdivision_name', None)
         
         if category_name:
             category, created = Category.objects.get_or_create(name=category_name)
             validated_data['category'] = category
+    
+            # Check if category is "Urgent" and set status to "Approved"
+            if category_name == "Urgent":
+                validated_data['status'] = 'Approved'
         
         if department_name:
             department, created = Department.objects.get_or_create(name=department_name)
             validated_data['department'] = department
+
+        if division_name:
+            division, created = Division.objects.get_or_create(name=division_name)
+            validated_data['division'] = division
+        
+        if subdivision_name:
+            subdivision, created = SubDivision.objects.get_or_create(name=subdivision_name)
+            validated_data['subdivision'] = subdivision    
 
         return super().create(validated_data)
 
@@ -63,10 +77,12 @@ class LinkDashboardSerializer(serializers.ModelSerializer):
     file = serializers.ImageField(source='image', read_only=True)
     category_name = serializers.SerializerMethodField()
     department_name = serializers.SerializerMethodField()
+    division_name=serializers.SerializerMethodField()
+    subdivision_name=serializers.SerializerMethodField()
 
     class Meta:
         model = Link
-        fields = ['id', 'title','type', 'link','submitted_by', 'submitted_on', 'file', 'category_name', 'status', 'description', 'rating', 'department_name']
+        fields = ['id', 'title','type', 'link','submitted_by', 'submitted_on', 'file', 'category_name', 'status', 'description', 'rating', 'department_name', 'division_name', 'subdivision_name']
 
     def get_submitted_by(self, obj):
         first_name = obj.user.first_name
@@ -80,4 +96,10 @@ class LinkDashboardSerializer(serializers.ModelSerializer):
         return [tag.name for tag in obj.tags.all()]  
 
     def get_department_name(self, obj):
-        return obj.department.name if obj.department else None        
+        return obj.department.name if obj.department else None      
+
+    def get_division_name(self, obj):
+        return obj.division.name if obj.division else None
+
+    def get_subdivision_name(self, obj):    
+        return obj.subdivision.name if obj.subdivision else None  

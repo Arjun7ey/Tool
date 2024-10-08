@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import render,redirect, get_object_or_404
 from django.shortcuts import render, get_object_or_404, redirect    
 from django.contrib.auth.decorators import login_required
-from upload.models import Content
+from upload.models import Content, Category
 from rest_framework import status
 from rest_framework.response import Response
 from django.http import JsonResponse
@@ -40,8 +40,13 @@ class EventListCreateAPIView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         # Set the created_by field to the current user
-        serializer.save(created_by=self.request.user)
-        
+        event = serializer.save(created_by=self.request.user)
+
+        # Create a Category with the name of the event's title
+        category_name = f"Event - {event.title}"
+        Category.objects.create(name=category_name)
+
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():

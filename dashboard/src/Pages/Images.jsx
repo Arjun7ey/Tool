@@ -1,51 +1,78 @@
 import React, { useState } from 'react';
-import { Container, Grid, Breadcrumbs,Link } from '@mui/material';
+import { Container,Box, Grid, Breadcrumbs,Link } from '@mui/material';
 import Header from '../Components/Header';
 import Sidebar from '../Components/Sidebar';
 import ImageTable from '../Components/Images/ImageTable';
 
+import { styled } from '@mui/material/styles';
+
+const SIDEBAR_WIDTH = '250px';
+const HEADER_HEIGHT = '64px';
+
+const Root = styled('div')({
+  display: 'flex',
+  height: '100vh',
+  overflow: 'hidden',
+});
+
+const SidebarWrapper = styled('div')({
+  width: SIDEBAR_WIDTH,
+  flexShrink: 0,
+});
+
+const MainContent = styled('div')({
+  flexGrow: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100vh',
+  overflow: 'hidden',
+});
+
+const ContentArea = styled('div')({
+  flexGrow: 1,
+  overflowY: 'auto',
+  padding: '16px',
+  marginTop: HEADER_HEIGHT,
+});
+  
+
 const Users = () => {
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <Sidebar
-        style={{ height: '100vh', width: '20%' }}
-      />
-      <div
-        style={{
-          marginLeft: '1%', 
-          width: '80%', 
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh', 
-        }}
-      >
-        <Header
-          style={{ width: '100%', top: 0, zIndex: 1 }} 
-        />
-        <div
-          style={{
-            marginTop: '64px', 
-            padding: '16px',
-            height: `calc(100vh - 64px)`,
-            overflowY: 'auto', 
-          }}
-        >
-          <Breadcrumbs aria-label="breadcrumb" style={{ marginBottom: '16px', marginLeft: '20px' }}>
-            <Link underline="hover" color="inherit" href="/dashboard">
-              Home
-            </Link>
-            <Link underline="hover" color="inherit" href="/images">
+    <Root>
+      <SidebarWrapper>
+        <Sidebar />
+      </SidebarWrapper>
+      <MainContent>
+        <Header />
+        <ContentArea>
+          <Box sx={{ padding: 2, paddingLeft: 3 }}> {/* Add padding to this container instead */}
+            <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: 2 }}>
+              <Link
+                underline="hover"
+                color="inherit"
+                href="/dashboard"
+                sx={{ fontWeight: 'bold' }}
+              >
+                Home
+              </Link>
+    <Link 
+        underline="hover" 
+        color="inherit" 
+        href="/images"
+        style={{ fontWeight: 'bold' }} // Apply bold style
+    >
               Images
             </Link>
           </Breadcrumbs>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <ImageTable />
-            </Grid>
+              </Grid>
           </Grid>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </ContentArea>
+      </MainContent>
+    </Root>
   );
 };
 

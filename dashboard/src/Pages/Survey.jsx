@@ -1,42 +1,80 @@
 import React, { useState } from 'react';
-import { Container, Grid } from '@mui/material';
+import { Container, Grid,Box,Breadcrumbs,Link } from '@mui/material';
 import Header from '../Components/Header';
 import Sidebar from '../Components/Sidebar';
-import SurveyTable from '../Components/Survey/SurveyTable';
+import Survey from '../Components/Survey/CreateSurvey';
+
+import { styled } from '@mui/material/styles';
+
+const SIDEBAR_WIDTH = '250px';
+const HEADER_HEIGHT = '64px';
+
+const Root = styled('div')({
+  display: 'flex',
+  height: '100vh',
+  overflow: 'hidden',
+});
+
+const SidebarWrapper = styled('div')({
+  width: SIDEBAR_WIDTH,
+  flexShrink: 0,
+});
+
+const MainContent = styled('div')({
+  flexGrow: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100vh',
+  overflow: 'hidden',
+});
+
+const ContentArea = styled('div')({
+  flexGrow: 1,
+  overflowY: 'auto',
+  padding: '16px',
+  marginTop: HEADER_HEIGHT,
+});
+  
 
 const Users = () => {
-  const [expanded, setExpanded] = useState(true);
-
   return (
-    <div className="flex" style={{ position: 'relative', height: '100vh' }}>
-      <Sidebar
-        style={{ position: 'fixed', height: '100%', top: 0, left: 0 }}
-        expanded={expanded}
-        setExpanded={setExpanded}
-      />
-      <div
-        className="flex-grow"
-        style={{
-          transition: 'margin-left 0.3s',
-          marginLeft: expanded ? '20%' : '10%',
-          width: expanded ? '80%' : '90%',
-        }}
-      >
-        <Header
-          style={{ position: 'fixed', width: expanded ? '80%' : '90%', top: 0, zIndex: 1 }}
-          expanded={expanded}
-          setExpanded={setExpanded}
-        />
-        <Container style={{ marginTop: '70px', height: 'calc(100vh - 64px)' }}>
+    <Root>
+      <SidebarWrapper>
+        <Sidebar />
+      </SidebarWrapper>
+      <MainContent>
+        <Header />
+        <ContentArea>
+          <Box sx={{ padding: 2, paddingLeft: 3 }}> {/* Add padding to this container instead */}
+            <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: 2 }}>
+              <Link
+                underline="hover"
+                color="inherit"
+                href="/dashboard"
+                sx={{ fontWeight: 'bold' }}
+              >
+                Home
+              </Link>
+    <Link 
+        underline="hover" 
+        color="inherit" 
+        href="/survey"
+        style={{ fontWeight: 'bold' }} // Apply bold style
+    >
+              Survey
+            </Link>
+          </Breadcrumbs>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <SurveyTable />
-            </Grid>
+              <Survey />
+              </Grid>
           </Grid>
-        </Container>
-      </div>
-    </div>
+          </Box>
+        </ContentArea>
+      </MainContent>
+    </Root>
   );
 };
 
 export default Users;
+

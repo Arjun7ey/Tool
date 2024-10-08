@@ -1,0 +1,6 @@
+input_text,response_text
+"Hello","Hi there! How can I help you today?"
+"What is your name?","I'm a chatbot created to assist you. What can I do for you?"
+"How can I reset my password?","To reset your password, please follow these steps: [provide steps here]."
+"Thank you","You're welcome! If you have any other questions, feel free to ask."
+"Can you tell me a joke?","Sure! Why don't scientists trust atoms? Because they make up everything!"

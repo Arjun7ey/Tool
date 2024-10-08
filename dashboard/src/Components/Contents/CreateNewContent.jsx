@@ -12,20 +12,43 @@ import {
   InputLabel,
   Divider,
   Snackbar,
-  Alert
+  Alert,
+  Typography,
+  Box,
+  FormControl
 } from '@mui/material';
-import axiosInstance from '../utils/axiosInstance'; 
+import { styled } from '@mui/material/styles';
+import { Add as AddIcon } from '@mui/icons-material';
+import axiosInstance from '../utils/axiosInstance';
+
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialogTitle-root': {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+  },
+  '& .MuiDialogContent-root': {
+    padding: theme.spacing(3),
+  },
+  '& .MuiDialogActions-root': {
+    padding: theme.spacing(2),
+  },
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  backgroundColor: '#fce8805e',
+  color: '#F4B400',
+  '&:hover': {
+    backgroundColor: '#fce88080',
+  },
+}));
 
 const CreateNewContent = () => {
   const [open, setOpen] = useState(false);
-  const [eventName, setEventName] = useState('');
-  const [eventStartDate, setEventStartDate] = useState('');
-  const [eventStartTime, setEventStartTime] = useState('');
-  const [eventEndDate, setEventEndDate] = useState('');
-  const [eventEndTime, setEventEndTime] = useState('');
+  const [contentName, setContentName] = useState('');
+  const [contentStartDate, setContentStartDate] = useState('');
+  const [contentStartTime, setContentStartTime] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [departments, setDepartments] = useState([]);
-  const [events, setEvents] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -34,21 +57,27 @@ const CreateNewContent = () => {
     const fetchDepartments = async () => {
       try {
         const response = await axiosInstance.get('api/department-userwise/');
-        setDepartments(response.data);
+        setDepartments(response.data.departments);
       } catch (error) {
         console.error('Error fetching departments:', error);
+        showSnackbar('Error fetching departments. Please try again.', 'error');
       }
     };
 
     fetchDepartments();
   }, []);
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
+  const handleClickOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setContentName('');
+    setContentStartDate('');
+    setContentStartTime('');
+    setSelectedDepartment('');
   };
 
   const showSnackbar = (message, severity) => {
@@ -57,49 +86,67 @@ const CreateNewContent = () => {
     setSnackbarOpen(true);
   };
 
-  const handleSave = async () => {
-    
-    const startDateTime = `${eventStartDate}T${eventStartTime}`;
-    const endDateTime = `${eventEndDate}T${eventEndTime}`;
+  const validateForm = () => {
+    if (!contentName.trim()) {
+      showSnackbar('Please enter a content name.', 'error');
+      return false;
+    }
+    if (!contentStartDate || !contentStartTime) {
+      showSnackbar('Please set the content start date and time.', 'error');
+      return false;
+    }
+    if (new Date(`${contentStartDate}T${contentStartTime}`) < new Date()) {
+      showSnackbar('Start date and time cannot be in the past.', 'error');
+      return false;
+    }
+    if (!selectedDepartment) {
+      showSnackbar('Please select a department.', 'error');
+      return false;
+    }
+    return true;
+  };
 
-    const newEvent = {
-      title: eventName,
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    const startDateTime = `${contentStartDate}T${contentStartTime}`;
+
+    const newContent = {
+      title: contentName,
       start_time: startDateTime,
       department: selectedDepartment,
     };
 
-    await addEvent(newEvent, showSnackbar);
-    handleClose();
-  };
-
-  const addEvent = async (newEvent, showSnackbar) => {
     try {
-      const response = await axiosInstance.post('api/contents/', newEvent);
-      setEvents((prevEvents) => [...prevEvents, response.data]);
+      const response = await axiosInstance.post('api/contents/', newContent);
       showSnackbar('Content added successfully!', 'success');
+      handleClose();
     } catch (error) {
       console.error('Error adding content:', error);
       showSnackbar('Error adding content. Please try again.', 'error');
     }
   };
 
-  const handleSnackbarClose = () => {
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') return;
     setSnackbarOpen(false);
   };
 
   return (
-    <div className="p-4 bg-white rounded mb-6">
-      <Button
-        style={{ backgroundColor: '#fce8805e', opacity: '1', color: '#F4B400' }}
+    <Box className="p-4 bg-white rounded mb-6">
+      <StyledButton
         variant="contained"
         fullWidth
         onClick={handleClickOpen}
+        startIcon={<AddIcon />}
       >
-        + Create New Content
-      </Button>
+        Create New Content
+      </StyledButton>
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>Create New Content</DialogTitle>
+      <StyledDialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>
+          <Typography variant="h6">Create New Content</Typography>
+        </DialogTitle>
         <Divider />
         <DialogContent>
           <TextField
@@ -110,9 +157,10 @@ const CreateNewContent = () => {
             type="text"
             fullWidth
             variant="outlined"
-            onChange={(e) => setEventName(e.target.value)}
+            value={contentName}
+            onChange={(e) => setContentName(e.target.value)}
           />
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={6}>
               <TextField
                 margin="dense"
@@ -121,10 +169,10 @@ const CreateNewContent = () => {
                 type="date"
                 fullWidth
                 variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                onChange={(e) => setEventStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                value={contentStartDate}
+                onChange={(e) => setContentStartDate(e.target.value)}
+                inputProps={{ min: new Date().toISOString().split('T')[0] }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -135,62 +183,55 @@ const CreateNewContent = () => {
                 type="time"
                 fullWidth
                 variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                onChange={(e) => setEventStartTime(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                value={contentStartTime}
+                onChange={(e) => setContentStartTime(e.target.value)}
               />
             </Grid>
           </Grid>
-         
-          <InputLabel id="department-label" style={{ marginTop: '16px' }}>
-            Department
-          </InputLabel>
-          <Select
-  labelId="department-label"
-  id="department"
-  onChange={(e) => setSelectedDepartment(e.target.value)}
-  fullWidth
-  variant="outlined"
-  value={selectedDepartment}
->
-  {departments
-    .filter(department => department.name !== 'Super Department') 
-    .map(department => (
-      <MenuItem key={department.id} value={department.id}>
-        {department.name}
-      </MenuItem>
-    ))}
-</Select>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="department-label">Department</InputLabel>
+            <Select
+              labelId="department-label"
+              id="department"
+              value={selectedDepartment}
+              label="Department"
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+            >
+              {departments
+                .filter(department => department.name !== 'Super Department')
+                .map(department => (
+                  <MenuItem key={department.id} value={department.id}>
+                    {department.name}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button color="error" onClick={handleClose}>
+          <Button onClick={handleClose} color="inherit">
             Cancel
           </Button>
-          <Button color="success" onClick={handleSave}>
+          <Button onClick={handleSave} color="primary" variant="contained">
             Save
           </Button>
         </DialogActions>
-      </Dialog>
+      </StyledDialog>
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
-        sx={{ backgroundColor: 'black' }} 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={handleSnackbarClose}
           severity={snackbarSeverity}
-          sx={{ 
-            width: '100%', 
-            backgroundColor: 'black',  
-            color: 'white'             
-          }}
+          sx={{ width: '100%', backgroundColor: 'black', color: 'white' }}
         >
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 };
 

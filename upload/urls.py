@@ -11,9 +11,6 @@ from .views import UserRegistrationView, UserLoginView, UserLogoutView , Useradm
 urlpatterns = [
    
     
-    path('login/', UserView.my_token_obtain_pair, name='login'),
+    path('login/', UserView.MyTokenObtainPairView.as_view(), name='login'),
   
-]
-websocket_urlpatterns = [
-    re_path(r'ws/direct/(?P<user_id>\d+)/$', consumers.DirectMessageConsumer.as_asgi()),
 ]

@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Paper, Grid, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button, Typography, TextField } from '@mui/material';
-import { ThumbUp, Share, Comment, Repeat } from '@mui/icons-material';
-import { useAuth } from '../utils/AuthContext';
+import React, { useState } from 'react';
+import { Grid, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Avatar, IconButton } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import PostPreviewSelection from './PostPreviewSelection';
-import axiosInstance from '../utils/axiosInstance';
-import { BASE_URL } from '../../config';
-import Swal from 'sweetalert2';
-import CircularProgress from '@mui/material/CircularProgress'; 
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import IosShareIcon from '@mui/icons-material/IosShare';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import SendIcon from '@mui/icons-material/Send';
+import InsertCommentIcon from '@mui/icons-material/InsertComment';
+import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import PublicIcon from '@mui/icons-material/Public';
+import CloseIcon from '@mui/icons-material/Close';
 
-
+const MotionPaper = motion(Paper);
 
 const socialMediaPreviews = [
   { name: 'Twitter', icon: 'https://www.freepnglogos.com/uploads/twitter-x-logo-png/twitter-x-logo-png-9.png' },
@@ -17,38 +24,18 @@ const socialMediaPreviews = [
 ];
 
 const ChartComponent = () => {
-  const { userData } = useAuth();
-  const [selectedPreview, setSelectedPreview] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [customText, setCustomText] = useState('');
-  const [posts, setPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const result = await axiosInstance.get('/api/approved_posts/');
-        setPosts(result.data.posts);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      } finally {
-        setLoadingPosts(false);
-      }
-    };
-
-    fetchPosts();
-  }, []);
-
-  const handleDialogOpen = (preview) => {
-    setSelectedPreview(preview);
+  const handlePlatformClick = (platform) => {
+    setSelectedPlatform(platform);
     setDialogOpen(true);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    setSelectedPreview(null);
     setSelectedImage(null);
     setCustomText('');
   };
@@ -57,284 +44,287 @@ const ChartComponent = () => {
     setSelectedImage(image);
   };
 
-  const handleCustomTextChange = (event) => {
-    setCustomText(event.target.value);
+  const handlePost = () => {
+    console.log('Posting to', selectedPlatform.name, 'with image:', selectedImage, 'and text:', customText);
+    handleDialogClose();
   };
 
-  const handlePost = async () => {
-    if (!selectedPreview || !selectedImage) return;
-  
-    const formData = new FormData();
-    formData.append('status', customText); // Use 'status' for the text field
-    formData.append('user_id', userData.userId); // Assuming userData has user ID
-    console.log("mymy",customText,userData.userId,selectedImage.url)
-    if (selectedImage) {
-      try {
-        const file = await handleImageUrlToFile(selectedImage.url);
-        if (file) {
-          formData.append('media', file);
-        } else {
-          console.error('Error converting image URL to file.');
-        }
-      } catch (error) {
-        console.error('Error converting image URL to file:', error);
-      }
-    } else {
-      formData.delete('media');
-    }
-  
-    try {
-      // Close the dialog immediately after the post request
-      handleDialogClose();
-  
-      // Show waiting animation (spinner) while waiting for the Swal notification
-      Swal.fire({
-        title: 'Posting...',
-        text: 'Please wait while we submit your post.',
-        icon: 'info',
-        didOpen: () => {
-          Swal.showLoading(); // Show loading spinner
-        },
-      });
-  
-      // Wait for the API response
-      await axiosInstance.post('/api/post_text_with_media_to_twitter/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      // Close the waiting animation and show success notification
-      await Swal.fire({
-        title: 'Success!',
-        text: 'Post submitted successfully!',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
-    } catch (error) {
-      console.error('Error posting content:', error);
-  
-      // Close the waiting animation and show error notification
-      await Swal.fire({
-        title: 'Error!',
-        text: 'Error submitting post. Please try again.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-    } finally {
-      setLoading(false); // Hide loading spinner
-    }
-  };
-  const handleImageUrlToFile = async (url) => {
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const file = new File([blob], 'image.jpg', { type: blob.type });
-        return file;
-    } catch (error) {
-        console.error('Error converting URL to file:', error);
-        return null;
-    }
-};
-  const renderPreviewContent = () => {
-    if (!selectedImage || !selectedPreview) return null;
-    const profilePic = `${BASE_URL}${userData.profilePicture}`;
-  
-    // Fixed dimensions for image container
-    const containerStyle = {
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#e3f2fd',
-      color: '#000',
-    };
-  
-    const imageContainerStyle = {
-      width: '100%',
-      height: '300px', // Fixed height for uniform image boxes
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      borderRadius: '8px',
-      backgroundColor: '#fff',
-      marginTop: '10px',
-    };
-  
-    const imageStyle = {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover', // Ensure images cover the container without distortion
-    };
-  
-    const headerStyle = {
-      marginBottom: '10px',
-      fontWeight: 'bold',
-    };
-  
-    switch (selectedPreview.name) {
+  const renderPreview = () => {
+    switch (selectedPlatform?.name) {
       case 'Twitter':
-        return (
-          <Paper style={containerStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <img
-                src={profilePic}
-                alt="Profile"
-                style={{ borderRadius: '50%', marginRight: '10px', width: '40px', height: '40px' }}
-              />
-              <div>
-                <Typography variant="body1" style={headerStyle}>
-                  {userData.username}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  @{userData.handle}
-                </Typography>
-              </div>
-            </div>
-            <Typography variant="body1" style={headerStyle}>
-              {customText || 'This is a Twitter post with the selected image.'}
-            </Typography>
-            <div style={imageContainerStyle}>
-              <img
-                src={selectedImage.url}
-                alt="Tweet"
-                style={imageStyle}
-              />
-            </div>
-            <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
-              <IconButton color="primary"><ThumbUp /></IconButton>
-              <IconButton color="primary"><Repeat /></IconButton>
-              <IconButton color="primary"><Comment /></IconButton>
-            </div>
-          </Paper>
-        );
+        return <TwitterPreview />;
       case 'Facebook':
-        return (
-          <Paper style={containerStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <img
-                src={profilePic}
-                alt="Profile"
-                style={{ borderRadius: '50%', marginRight: '10px', width: '40px', height: '40px' }}
-              />
-              <div>
-                <Typography variant="body1" style={headerStyle}>
-                  {userData.username}
-                </Typography>
-              </div>
-            </div>
-            <Typography variant="body1" style={headerStyle}>
-              {customText || 'This is a Facebook post with the selected image.'}
-            </Typography>
-            <div style={imageContainerStyle}>
-              <img
-                src={selectedImage.url}
-                alt="Facebook Post"
-                style={imageStyle}
-              />
-            </div>
-            <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
-              <IconButton color="primary"><ThumbUp /></IconButton>
-              <IconButton color="primary"><Comment /></IconButton>
-              <IconButton color="primary"><Share /></IconButton>
-            </div>
-          </Paper>
-        );
+        return <FacebookPreview />;
       case 'Instagram':
-        return (
-          <Paper style={containerStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <img
-                src={profilePic}
-                alt="Profile"
-                style={{ borderRadius: '50%', marginRight: '10px', width: '40px', height: '40px' }}
-              />
-              <div>
-                <Typography variant="body1" style={headerStyle}>
-                  {userData.username}
-                </Typography>
-              </div>
-            </div>
-            <div style={imageContainerStyle}>
-              <img
-                src={selectedImage.url}
-                alt="Instagram Post"
-                style={imageStyle}
-              />
-            </div>
-            <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
-              <IconButton color="primary"><ThumbUp /></IconButton>
-              <IconButton color="primary"><Comment /></IconButton>
-              <IconButton color="primary"><Share /></IconButton>
-            </div>
-          </Paper>
-        );
+        return <InstagramPreview />;
       default:
         return null;
     }
   };
 
-  return (
-    <div style={{ backgroundColor: '#FFFFFF', padding: '20px' }}>
-      <Grid container spacing={3}>
-        {socialMediaPreviews.map((preview, index) => (
-          <Grid item xs={12} sm={4} key={index}>
-            <Paper style={{ padding: '10px', textAlign: 'center', backgroundColor: '#FFD700' }}>
-              <Typography variant="h6" gutterBottom>
-                {preview.name}
-              </Typography>
-              <IconButton
-                onClick={() => handleDialogOpen(preview)}
-                style={{ marginTop: '10px' }}
-              >
-                <img src={preview.icon} alt={preview.name} style={{ width: '40px', height: '40px' }} />
-              </IconButton>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
+  const TwitterPreview = () => (
+    <Box sx={{ mt: 2, p: 2, border: '1px solid #eff3f4', borderRadius: '16px', bgcolor: '#262b3b', color: '#FFFFFF' }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+        <Avatar 
+          sx={{ width: 48, height: 48, mr: 2 }}
+          src="https://pbs.twimg.com/profile_images/1683325380441128960/yRsRRjGO_400x400.jpg"
+        />
+        <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mr: 1, color: '#FFFFFF' }}>Twitter</Typography>
+            <VerifiedIcon sx={{ color: '#FFD700', fontSize: 18, mr: 1 }} />
+            <Typography variant="body2" sx={{ color: '#8899A6' }}>@Twitter · 1h</Typography>
+          </Box>
+          <Typography variant="body1" sx={{ mb: 2, color: '#FFFFFF' }}>
+            {customText || "What's happening?"}
+          </Typography>
+          {selectedImage && (
+            <Box sx={{ mb: 2, borderRadius: '16px', overflow: 'hidden', border: '1px solid #2F3336' }}>
+              <img
+                src={selectedImage.url}
+                alt="Tweet image"
+                style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }}
+              />
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', maxWidth: '425px', mt: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', color: '#8899A6' }}>
+              <ChatBubbleOutlineIcon sx={{ fontSize: 18, mr: 1 }} />
+              <Typography variant="body2">1.2K</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', color: '#8899A6' }}>
+              <RepeatIcon sx={{ fontSize: 18, mr: 1 }} />
+              <Typography variant="body2">4.8K</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', color: '#8899A6' }}>
+              <FavoriteBorderIcon sx={{ fontSize: 18, mr: 1 }} />
+              <Typography variant="body2">35.7K</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', color: '#8899A6' }}>
+              <IosShareIcon sx={{ fontSize: 18 }} />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
 
-      {/* Image Selection Dialog */}
-      <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md" fullWidth>
-    <DialogTitle>Select Image for {selectedPreview?.name}</DialogTitle>
-    <DialogContent>
-        <PostPreviewSelection onSelectPreview={handleImageSelection} />
-        <TextField
-            label="Custom Text"
+  const InstagramPreview = () => (
+    <Box sx={{ mt: 2, p: 2, border: '1px solid #262626', borderRadius: '3px', bgcolor: '#262b3b', color: '#FFFFFF' }}>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar 
+              sx={{ width: 32, height: 32, mr: 1 }}
+              src="https://instagram.com/static/images/anonymousUser.jpg/23e7b3b2a737.jpg"
+            />
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#FFFFFF' }}>instagram</Typography>
+          </Box>
+          <MoreHorizIcon sx={{ color: '#FFFFFF' }} />
+        </Box>
+        {selectedImage && (
+          <Box sx={{ mb: 2, borderRadius: '3px', overflow: 'hidden' }}>
+            <img
+              src={selectedImage.url}
+              alt="Instagram post"
+              style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }}
+            />
+          </Box>
+        )}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex' }}>
+            <IconButton size="small" sx={{ color: '#FFFFFF' }}><FavoriteBorderIcon /></IconButton>
+            <IconButton size="small" sx={{ color: '#FFFFFF' }}><ChatBubbleOutlineIcon /></IconButton>
+            <IconButton size="small" sx={{ color: '#FFFFFF' }}><SendIcon /></IconButton>
+          </Box>
+          <IconButton size="small" sx={{ color: '#FFFFFF' }}><BookmarkBorderIcon /></IconButton>
+        </Box>
+        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5, color: '#FFFFFF' }}>1,000,000 likes</Typography>
+        <Typography variant="body2" sx={{ color: '#FFFFFF' }}>
+          <Box component="span" sx={{ fontWeight: 'bold', mr: 1 }}>instagram</Box>
+          {customText || "Your caption here"}
+        </Typography>
+      </Box>
+    </Box>
+  );
+
+  const FacebookPreview = () => (
+    <Box sx={{ mt: 2, p: 2, border: '1px solid #2D88FF', borderRadius: '8px', bgcolor: '#262b3b', color: '#FFFFFF' }}>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Avatar 
+            sx={{ width: 40, height: 40, mr: 1 }}
+            src="https://static.xx.fbcdn.net/rsrc.php/v3/yQ/r/4KZKRR8VgIS.png"
+          />
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#FFFFFF' }}>Facebook</Typography>
+            <Typography variant="caption" sx={{ color: '#B0B3B8' }}>1 hr · <PublicIcon sx={{ fontSize: 12, ml: 0.5 }} /></Typography>
+          </Box>
+        </Box>
+        <Typography variant="body1" sx={{ mb: 2, color: '#FFFFFF' }}>
+          {customText || "What's on your mind?"}
+        </Typography>
+        {selectedImage && (
+          <Box sx={{ mb: 2, borderRadius: '8px', overflow: 'hidden' }}>
+            <img
+              src={selectedImage.url}
+              alt="Facebook post"
+              style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }}
+            />
+          </Box>
+        )}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #3E4042', pt: 1 }}>
+          <Button startIcon={<ThumbUpOutlinedIcon />} sx={{ color: '#B0B3B8' }}>Like</Button>
+          <Button startIcon={<InsertCommentIcon />} sx={{ color: '#B0B3B8' }}>Comment</Button>
+          <Button startIcon={<SendIcon />} sx={{ color: '#B0B3B8' }}>Share</Button>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Grid container spacing={3}>
+    <AnimatePresence>
+      {socialMediaPreviews.map((platform, index) => (
+        <Grid item xs={12} sm={4} key={index}>
+          <MotionPaper
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: '0px 10px 20px rgba(0,0,0,0.2)',
+            }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handlePlatformClick(platform)}
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              background: 'linear-gradient(145deg, #FFFFFF, #F0F0F0)',
+              borderRadius: '15px',
+              boxShadow: '5px 5px 15px #D1D1D1, -5px -5px 15px #FFFFFF',
+              cursor: 'pointer',
+              border: '1px solid #E0E0E0',
+            }}
+          >
+            <Box
+              sx={{
+                width: '60px',
+                height: '60px',
+                margin: '0 auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                backgroundColor: platform.name === 'Twitter' ? '#000000' : 'transparent',
+              }}
+            >
+              <img 
+                src={platform.icon} 
+                alt={platform.name} 
+                style={{ 
+                  width: platform.name === 'Twitter' ? '40px' : '60px', 
+                  height: platform.name === 'Twitter' ? '40px' : '60px',
+                  objectFit: 'contain'
+                }} 
+              />
+            </Box>
+            <Typography variant="h6" sx={{ mt: 2, fontWeight: 'bold', color: '#000000' }}>
+              {platform.name}
+            </Typography>
+          </MotionPaper>
+        </Grid>
+      ))}
+    </AnimatePresence>
+    
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleDialogClose} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          style: {
+            backgroundColor: '#000000',
+            color: '#FFFFFF',
+            borderRadius: '15px',
+            border: '1px solid #FFD700',
+          },
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontWeight: 'bold', 
+          color: '#FFD700', 
+          borderBottom: '2px solid #FFD700',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          Post to {selectedPlatform?.name}
+          <IconButton onClick={handleDialogClose} sx={{ color: '#FFD700' }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#FFD700' }}>
+            Select an Image
+          </Typography>
+          <PostPreviewSelection onSelectPreview={handleImageSelection} />
+          
+          <TextField
+            label={selectedPlatform?.name === 'Twitter' ? "What's happening?" : "What's on your mind?"}
             variant="outlined"
             fullWidth
             multiline
             rows={4}
             value={customText}
-            onChange={handleCustomTextChange}
-            margin="normal"
-        />
-        {selectedImage && (
-            <div style={{ marginTop: '20px' }}>
-                <Typography variant="h6" gutterBottom>
-                    {selectedPreview?.name} Post Preview
-                </Typography>
-                {renderPreviewContent()}
-            </div>
-        )}
-        {loading && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
-                <CircularProgress />
-                <Typography variant="body1" style={{ marginLeft: '10px' }}>Posting...</Typography>
-            </div>
-        )}
-    </DialogContent>
-    <DialogActions>
-        <Button onClick={handleDialogClose} color="primary">
-            Close
-        </Button>
-        <Button onClick={handlePost} color="primary">
-            Post
-        </Button>
-    </DialogActions>
-</Dialog>
-
-    </div>
+            onChange={(e) => setCustomText(e.target.value)}
+            sx={{ 
+              mt: 3, 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: '#FFD700',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#FFD700',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#FFD700',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: '#FFD700',
+              },
+              '& .MuiInputBase-input': {
+                color: '#FFFFFF',
+              },
+            }}
+          />
+          
+          {renderPreview()}
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={handleDialogClose} sx={{ color: '#FFD700' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handlePost}
+            variant="contained"
+            sx={{
+              bgcolor: '#FFD700',
+              color: '#000000',
+              '&:hover': { 
+                bgcolor: '#E6C200',
+              },
+            }}
+          >
+            {selectedPlatform?.name === 'Twitter' ? 'Tweet' : 'Post'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Grid>
   );
 };
 

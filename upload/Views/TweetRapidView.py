@@ -1,16 +1,36 @@
-from django.http import JsonResponse
+from django.http import JsonResponse,HttpResponse
 from upload.models import Tweet, Image
 from django.views.decorators.http import require_http_methods
 import requests
 from urllib.parse import urlencode
 import json
+import numpy as np
+import tensorflow as tf
+import cv2
+import time
+from django.views.decorators.http import require_POST
+from google.cloud import vision
 import os
 from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 import re
+from django.utils.decorators import method_decorator
+from urllib.parse import quote
 from django.core.files.storage import default_storage
 import http.client
 import urllib.parse
+from urllib.parse import urlencode, quote
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import requests
+from io import BytesIO
+import tensorflow as tf
+import traceback
+import logging
+import warnings 
+from transformers import BlipProcessor, BlipForConditionalGeneration
+from PIL import Image as PILImage 
+
+logger = logging.getLogger(__name__)
 
 @require_http_methods(["GET"])
 def fetch_tweet_details(request, tweet_id):
@@ -120,14 +140,16 @@ def search_twitter(request):
 
 @require_http_methods(["GET"])
 def fetch_trends(request):
-    conn = http.client.HTTPSConnection("twitter-aio.p.rapidapi.com")
+    conn = http.client.HTTPSConnection("twitter-x.p.rapidapi.com")
 
     headers = {
-        'x-rapidapi-key': "a84d0adc58msh7547906bd5ad3a9p145f4ajsn5d7d4f8af91b",
-        'x-rapidapi-host': "twitter-aio.p.rapidapi.com"
-    }
+    'x-rapidapi-key': "a84d0adc58msh7547906bd5ad3a9p145f4ajsn5d7d4f8af91b",
+    'x-rapidapi-host': "twitter-x.p.rapidapi.com"
+}
 
-    conn.request("GET", "/trends/2282863", headers=headers)
+
+    conn.request("GET", "/trends/?woeid=2282863", headers=headers)
+
     res = conn.getresponse()
     data = res.read()
 
@@ -140,7 +162,7 @@ def fetch_trends(request):
         else:
             # If it's not a list, return an error
             return JsonResponse({'error': 'Unexpected response format: Not a list'}, status=500)
-        
+       
         return JsonResponse({'trends': top_10_trends}, safe=False)
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Failed to decode JSON response'}, status=500)
@@ -169,6 +191,7 @@ def get_ai_description(request):
     res = conn.getresponse()
     data = res.read()
 
+
 @require_http_methods(["GET"])
 def analyze_sentiment(request):
     text = request.GET.get('text', '')
@@ -191,12 +214,322 @@ def analyze_sentiment(request):
         data = res.read()
         
         sentiment_data = json.loads(data.decode('utf-8'))
-       
-        return JsonResponse(sentiment_data)
+        sentiment_type = sentiment_data.get('type')  # Returns 'positive', 'negative', or 'neutral'
+        
+        return HttpResponse(sentiment_type)
     
-    except http.client.HTTPException as e:
-        return JsonResponse({'error': f'HTTP request failed: {str(e)}'}, status=500)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Failed to decode API response'}, status=500)
+    except Exception as e:
+        logger.error(f"Error in sentiment analysis: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
     finally:
         conn.close()
+
+class TwitterSearchView(View):
+    def get(self, request):
+        query = request.GET.get('query', '')
+        search_type = request.GET.get('type', 'Top')
+        
+        if not query:
+            return JsonResponse({'error': 'Query parameter is required'}, status=400)
+        
+        # Encode the query and search_type to handle spaces and special characters
+        encoded_query = quote(query)
+        encoded_search_type = quote(search_type)
+        
+        conn = http.client.HTTPSConnection("twitter-api47.p.rapidapi.com")
+        
+        headers = {
+            'x-rapidapi-key': "a84d0adc58msh7547906bd5ad3a9p145f4ajsn5d7d4f8af91b",
+            'x-rapidapi-host': "twitter-api47.p.rapidapi.com"
+        }
+        
+        endpoint = f"/v2/search?query={encoded_query}&type={encoded_search_type}"
+        
+        try:
+            conn.request("GET", endpoint, headers=headers)
+            res = conn.getresponse()
+            data = res.read()
+            
+            if res.status != 200:
+                logger.error(f"API returned non-200 status code: {res.status}")
+                return JsonResponse({'error': f"API Error: {res.status} {res.reason}"}, status=res.status)
+            
+            json_data = json.loads(data.decode("utf-8"))
+            
+            
+            tweets = json_data.get('tweets', [])
+            cursor = json_data.get('cursor', '')
+            
+            # Limit to 5 tweets
+            limited_tweets = tweets[:10]
+            
+            # Process tweets to extract necessary information
+            processed_tweets = []
+            for tweet in limited_tweets:
+                processed_tweet = {
+                    'id': tweet.get('rest_id'),
+                    'text': tweet.get('legacy', {}).get('full_text'),
+                    'user': {
+                        'name': tweet.get('core', {}).get('user_results', {}).get('result', {}).get('legacy', {}).get('name'),
+                        'screen_name': tweet.get('core', {}).get('user_results', {}).get('result', {}).get('legacy', {}).get('screen_name'),
+                        'profile_image_url': tweet.get('core', {}).get('user_results', {}).get('result', {}).get('legacy', {}).get('profile_image_url_https')
+                    },
+                    'retweet_count': tweet.get('legacy', {}).get('retweet_count'),
+                    'favorite_count': tweet.get('legacy', {}).get('favorite_count'),
+                    'media': tweet.get('legacy', {}).get('extended_entities', {}).get('media', [])
+                }
+                processed_tweets.append(processed_tweet)
+            
+            response_data = {
+                'tweets': processed_tweets,
+                'total_count': len(tweets),
+                'displayed_count': len(processed_tweets),
+                'cursor': cursor
+            }
+            
+            
+            
+            return JsonResponse(response_data)
+        except http.client.HTTPException as e:
+            logger.error(f"HTTP error occurred: {str(e)}")
+            return JsonResponse({'error': 'An HTTP error occurred while connecting to the API.'}, status=500)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decoding error: {str(e)}")
+            return JsonResponse({'error': 'Unable to parse API response. Please try again later.'}, status=500)
+        except Exception as e:
+            logger.error(f"Unexpected error in TwitterSearchView: {str(e)}", exc_info=True)
+            return JsonResponse({'error': 'An unexpected error occurred. Please try again later.'}, status=500)
+        finally:
+            conn.close()
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TwitterSentimentView(View):
+    def __init__(self):
+        self.sentiment_analyzer = SentimentIntensityAnalyzer()
+
+    def get(self, request):
+        query = request.GET.get('query', '')
+       
+
+        if not query:
+            logger.warning("Received request without query parameter")
+            return JsonResponse({'error': 'Query parameter is required'}, status=400)
+
+        try:
+            tweets = self.fetch_tweets(query)
+            sentiment_counts = self.analyze_sentiment_batch(tweets)
+
+           
+            response_data = {
+                'sentiment_summary': sentiment_counts,
+                'total_analyzed': sum(sentiment_counts.values())
+            }
+            
+            return JsonResponse(response_data, status=200)
+
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+            return JsonResponse({'error': f"An unexpected error occurred: {str(e)}"}, status=500)
+
+    def fetch_tweets(self, query):
+        encoded_query = quote(query)
+        conn = http.client.HTTPSConnection("twitter-api47.p.rapidapi.com")
+        headers = {
+            'x-rapidapi-key': "a84d0adc58msh7547906bd5ad3a9p145f4ajsn5d7d4f8af91b",
+            'x-rapidapi-host': "twitter-api47.p.rapidapi.com"
+        }
+        endpoint = f"/v2/search?query={encoded_query}&type=Top"
+
+        conn.request("GET", endpoint, headers=headers)
+        res = conn.getresponse()
+        data = res.read()
+        conn.close()
+
+        if res.status != 200:
+            raise Exception(f"API Error: {res.status} {res.reason}")
+
+        json_data = json.loads(data.decode("utf-8"))
+        return json_data.get('tweets', [])
+
+    def analyze_sentiment_batch(self, tweets):
+        sentiment_counts = {'positive': 0, 'negative': 0, 'neutral': 0}
+        
+        for tweet in tweets:
+            tweet_text = tweet.get('legacy', {}).get('full_text', '')
+            sentiment = self.get_sentiment(tweet_text)
+            sentiment_counts[sentiment] += 1
+
+        return sentiment_counts
+
+    def get_sentiment(self, text):
+        scores = self.sentiment_analyzer.polarity_scores(text)
+        if scores['compound'] > 0.05:
+            return 'positive'
+        elif scores['compound'] < -0.05:
+            return 'negative'
+        else:
+            return 'neutral'
+        
+
+class TwitterMediaView(View):
+    def get(self, request):
+        query = request.GET.get('query', '')
+        
+        if not query:
+            return JsonResponse({'error': 'Query parameter is required'}, status=400)
+        
+        encoded_query = quote(query)
+        
+        conn = http.client.HTTPSConnection("twitter-api47.p.rapidapi.com")
+        
+        headers = {
+            'x-rapidapi-key': "a84d0adc58msh7547906bd5ad3a9p145f4ajsn5d7d4f8af91b",
+            'x-rapidapi-host': "twitter-api47.p.rapidapi.com"
+        }
+        
+        endpoint = f"/v2/search?query={encoded_query}&type=Top"
+        
+        try:
+            conn.request("GET", endpoint, headers=headers)
+            res = conn.getresponse()
+            data = res.read()
+            
+            if res.status != 200:
+                return JsonResponse({'error': f"API Error: {res.status} {res.reason}"}, status=res.status)
+            
+            json_data = json.loads(data.decode("utf-8"))
+            
+            tweets = json_data.get('tweets', [])
+            
+            # Process tweets to extract only media information
+            media_data = {
+                'images': [],
+                'videos': []
+            }
+            
+            for tweet in tweets:
+                media = tweet.get('legacy', {}).get('extended_entities', {}).get('media', [])
+                for item in media:
+                    if item['type'] == 'photo':
+                        media_data['images'].append({
+                            'url': item['media_url_https'],
+                            'alt': item.get('ext_alt_text', ''),
+                            'user': tweet.get('core', {}).get('user_results', {}).get('result', {}).get('legacy', {}).get('name')
+                        })
+                    elif item['type'] == 'video':
+                        video_url = next((variant['url'] for variant in item['video_info']['variants'] if variant['content_type'] == 'video/mp4'), None)
+                        if video_url:
+                            media_data['videos'].append({
+                                'url': video_url,
+                                'thumbnail': item['media_url_https'],
+                                'user': tweet.get('core', {}).get('user_results', {}).get('result', {}).get('legacy', {}).get('name')
+                            })
+            
+            return JsonResponse(media_data)
+        
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            conn.close()        
+
+
+
+# Initialize TensorFlow model globally
+model = None
+
+caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+caption_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+
+@csrf_exempt
+@require_POST
+def analyze_image(request):
+    global model
+
+    if model is None:
+        try:
+            model = tf.keras.applications.MobileNetV2(weights='imagenet')
+            logging.info("MobileNetV2 model loaded successfully")
+        except Exception as e:
+            logging.error(f"Failed to load MobileNetV2 model: {str(e)}")
+            return JsonResponse({'error': 'Image analysis model is not available'}, status=500)
+
+    start_time = time.time()
+
+    try:
+        data = json.loads(request.body)
+        image_url = data.get('image_url')
+
+        if not image_url:
+            return JsonResponse({'error': 'No image URL provided'}, status=400)
+
+        logger.info(f"Analyzing image from URL: {image_url}")
+
+        # Determine if it's a Twitter image
+        is_twitter_image = 'twimg.com' in image_url
+
+        if is_twitter_image:
+            logger.warning("SSL verification disabled for Twitter image. This is not secure for production use.")
+            warnings.warn("SSL verification is disabled for Twitter images. This is not secure for production use.", UserWarning)
+            response = requests.get(image_url, verify=False)
+        else:
+            response = requests.get(image_url)
+
+        img = PILImage.open(BytesIO(response.content)).convert('RGB')
+
+        # Calculate image properties
+        img_width, img_height = img.size
+
+        # Calculate sharpness using variance of Laplacian
+        gray_image = img.convert('L')
+        image_array = np.array(gray_image)
+        laplacian = cv2.Laplacian(image_array, cv2.CV_64F)
+        sharpness = laplacian.var()
+
+        # Define quality based on sharpness
+        quality = 'High' if sharpness > 1000 else 'Medium' if sharpness > 500 else 'Low'
+
+        # Preprocess the image for MobileNetV2
+        img_resized = img.resize((224, 224))
+        img_array = tf.keras.preprocessing.image.img_to_array(img_resized)
+        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+        img_array = tf.expand_dims(img_array, 0)
+
+        # Make predictions with MobileNetV2
+        predictions = model.predict(img_array)
+        decoded_predictions = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=3)[0]
+
+        # Generate caption
+        inputs = caption_processor(images=img, return_tensors="pt")
+        outputs = caption_model.generate(**inputs)
+        caption = caption_processor.decode(outputs[0], skip_special_tokens=True)
+
+        # Format the results
+        results = [
+            {'label': label, 'probability': float(prob)}
+            for (_, label, prob) in decoded_predictions
+        ]
+
+        processing_time = time.time() - start_time
+
+        # Construct the response
+        response_data = {
+            'results': results,
+            'image_width': img_width,
+            'image_height': img_height,
+            'sharpness': float(sharpness),
+            'quality': quality,
+            'processing_time': processing_time,
+            'caption': caption
+        }
+
+        logger.info(f"Analysis complete. Results: {response_data}")
+        return JsonResponse(response_data)
+
+    except requests.RequestException as e:
+        logger.error(f"Error downloading image: {str(e)}")
+        return JsonResponse({'error': 'Failed to download the image'}, status=500)
+    except Exception as e:
+        logger.error(f"Error during image analysis: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'error': 'An error occurred during image analysis'}, status=500)

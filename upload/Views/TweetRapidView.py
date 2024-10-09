@@ -5,7 +5,16 @@ import requests
 from urllib.parse import urlencode
 import json
 import numpy as np
-import tensorflow as tf
+import torch
+from torchvision import models, transforms
+from PIL import Image
+import requests
+from io import BytesIO
+import time
+import logging
+import numpy as np
+import cv2
+from transformers import BlipProcessor, BlipForConditionalGeneration
 import cv2
 import time
 from django.views.decorators.http import require_POST
@@ -23,7 +32,6 @@ from urllib.parse import urlencode, quote
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import requests
 from io import BytesIO
-import tensorflow as tf
 import traceback
 import logging
 import warnings 
@@ -435,47 +443,45 @@ class TwitterMediaView(View):
 
 
 
-# Initialize TensorFlow model globally
 model = None
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+# Initialize BLIP model for image captioning
+caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
 caption_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+
 
 @csrf_exempt
 @require_POST
 def analyze_image(request):
-    global model
+    global model, caption_processor, caption_model
 
+    try:
+        data = json.loads(request.body)
+        image_url = data.get('image_url')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    if not image_url:
+        return JsonResponse({'error': 'No image URL provided'}, status=400)
+    
     if model is None:
         try:
-            model = tf.keras.applications.MobileNetV2(weights='imagenet')
-            logging.info("MobileNetV2 model loaded successfully")
+            model = models.mobilenet_v2(pretrained=True).to(device)
+            model.eval()
+            logger.info("MobileNetV2 model loaded successfully")
         except Exception as e:
-            logging.error(f"Failed to load MobileNetV2 model: {str(e)}")
+            logger.error(f"Failed to load MobileNetV2 model: {str(e)}")
             return JsonResponse({'error': 'Image analysis model is not available'}, status=500)
 
     start_time = time.time()
 
     try:
-        data = json.loads(request.body)
-        image_url = data.get('image_url')
-
-        if not image_url:
-            return JsonResponse({'error': 'No image URL provided'}, status=400)
-
         logger.info(f"Analyzing image from URL: {image_url}")
 
-        # Determine if it's a Twitter image
-        is_twitter_image = 'twimg.com' in image_url
-
-        if is_twitter_image:
-            logger.warning("SSL verification disabled for Twitter image. This is not secure for production use.")
-            warnings.warn("SSL verification is disabled for Twitter images. This is not secure for production use.", UserWarning)
-            response = requests.get(image_url, verify=False)
-        else:
-            response = requests.get(image_url)
-
-        img = PILImage.open(BytesIO(response.content)).convert('RGB')
+        # Download the image
+        response = requests.get(image_url, verify=False)  # Note: verify=False is not recommended for production
+        img = Image.open(BytesIO(response.content)).convert('RGB')
 
         # Calculate image properties
         img_width, img_height = img.size
@@ -490,25 +496,46 @@ def analyze_image(request):
         quality = 'High' if sharpness > 1000 else 'Medium' if sharpness > 500 else 'Low'
 
         # Preprocess the image for MobileNetV2
-        img_resized = img.resize((224, 224))
-        img_array = tf.keras.preprocessing.image.img_to_array(img_resized)
-        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
-        img_array = tf.expand_dims(img_array, 0)
+        preprocess = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        input_tensor = preprocess(img)
+        input_batch = input_tensor.unsqueeze(0).to(device)
 
         # Make predictions with MobileNetV2
-        predictions = model.predict(img_array)
-        decoded_predictions = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=3)[0]
+        with torch.no_grad():
+            output = model(input_batch)
 
-        # Generate caption
-        inputs = caption_processor(images=img, return_tensors="pt")
-        outputs = caption_model.generate(**inputs)
-        caption = caption_processor.decode(outputs[0], skip_special_tokens=True)
+        # The output has unnormalized scores. To get probabilities, run a softmax on it.
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
 
-        # Format the results
+        # Read the ImageNet class labels
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            imagenet_classes_path = os.path.join(current_dir, 'imagenet_classes.txt')
+            with open(imagenet_classes_path) as f:
+                categories = [s.strip() for s in f.readlines()]
+        except FileNotFoundError:
+            logger.error("ImageNet classes file not found. Using placeholder categories.")
+            categories = [f"Category_{i}" for i in range(1000)]  # Placeholder categories
+
+        # Get top 3 predictions
+        top3_prob, top3_catid = torch.topk(probabilities, 3)
         results = [
-            {'label': label, 'probability': float(prob)}
-            for (_, label, prob) in decoded_predictions
+            {'label': categories[catid], 'probability': float(prob)}
+            for prob, catid in zip(top3_prob, top3_catid)
         ]
+
+        # Generate caption (assuming caption_model and caption_processor are defined elsewhere)
+        if caption_model and caption_processor:
+            inputs = caption_processor(images=img, return_tensors="pt").to(device)
+            outputs = caption_model.generate(**inputs)
+            caption = caption_processor.decode(outputs[0], skip_special_tokens=True)
+        else:
+            caption = "Caption generation not available"
 
         processing_time = time.time() - start_time
 
@@ -528,8 +555,7 @@ def analyze_image(request):
 
     except requests.RequestException as e:
         logger.error(f"Error downloading image: {str(e)}")
-        return JsonResponse({'error': 'Failed to download the image'}, status=500)
+        return JsonResponse({'error': f'Failed to download the image: {str(e)}'}, status=500)
     except Exception as e:
-        logger.error(f"Error during image analysis: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        return JsonResponse({'error': 'An error occurred during image analysis'}, status=500)
+        logger.error(f"Error during image analysis: {str(e)}", exc_info=True)
+        return JsonResponse({'error': f'An error occurred during image analysis: {str(e)}'}, status=500)

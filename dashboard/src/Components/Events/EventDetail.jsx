@@ -74,19 +74,18 @@ const EventDetail = () => {
 
     try {
       const imageUrl = image.url || getFullUrl(image.file);
-      const response = await axiosInstance.post('/api/analyze-image/', { image_url: imageUrl });
-      setImageAnalysis({
-        results: response.data.results,
-        image_width: response.data.image_width,
-        image_height: response.data.image_height,
-        sharpness: response.data.sharpness,
-        quality: response.data.quality,
-        processing_time: response.data.processing_time,
-        image_caption: response.data.caption,
-      });
+      const response = await axiosInstance.post('/api/analyze-image/', 
+        { image_url: imageUrl },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      setImageAnalysis(response.data);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      setImageAnalysis([{ label: 'Error', probability: 1 }]);
+      setImageAnalysis({ error: 'Failed to analyze image. Please try again.' });
     } finally {
       setAnalysisLoading(false);
     }
@@ -131,16 +130,15 @@ const EventDetail = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-8 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl shadow-2xl">
-     <motion.h1 
-  initial={{ opacity: 0, y: -20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="text-5xl font-extrabold mb-6 tracking-tight"
-  style={{ color: '#DAA520' }}  // Darker gold text (Goldenrod)
->
-  {event.title}
-</motion.h1>
-
+      <motion.h1 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-5xl font-extrabold mb-6 tracking-tight"
+        style={{ color: '#DAA520' }}
+      >
+        {event.title}
+      </motion.h1>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -169,20 +167,18 @@ const EventDetail = () => {
       </motion.div>
       
       <motion.h2 
-  initial={{ opacity: 0, x: -20 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ duration: 0.5, delay: 0.4 }}
-  className="text-3xl font-bold mb-10 flex items-center"
-  style={{ color: '#DAA520' }}  // Darker golden text (Goldenrod)
->
-  <ImageIcon 
-    className="w-8 h-8 mr-4"
-    style={{ color: '#B8860B' }}  // Even darker gold for the icon (Dark Goldenrod)
-  />
-  Event Media with AI Insights
-</motion.h2>
-
-
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="text-3xl font-bold mb-10 flex items-center"
+        style={{ color: '#DAA520' }}
+      >
+        <ImageIcon 
+          className="w-8 h-8 mr-4"
+          style={{ color: '#B8860B' }}
+        />
+        Event Media with AI Insights
+      </motion.h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Event Media Section */}
@@ -284,7 +280,6 @@ const EventDetail = () => {
       )}
 
       {/* Image Analysis Modal */}
-      {/* Image Analysis Modal */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
@@ -319,9 +314,12 @@ const EventDetail = () => {
                       <Loader className="w-6 h-6 animate-spin text-indigo-600 mr-2" />
                       <p className="text-lg text-gray-700 font-semibold">Analyzing image...</p>
                     </div>
+                  ) : imageAnalysis?.error ? (
+                    <div className="text-red-500 font-semibold">{imageAnalysis.error}</div>
                   ) : (
                     <div className="space-y-4">
                       <h4 className="font-bold text-xl text-indigo-700">AI Analysis Results:</h4>
+                      
                       {/* Object Detection */}
                       {imageAnalysis?.results && (
                         <div className="bg-gray-50 p-3 rounded-lg shadow">
@@ -346,35 +344,35 @@ const EventDetail = () => {
                           <li className="flex justify-between items-center">
                             <span className="font-medium">Dimensions:</span>
                             <span className="bg-purple-100 text-purple-800 py-0.5 px-2 rounded-full text-xs">
-                              {imageAnalysis.image_width}x{imageAnalysis.image_height}px
+                              {imageAnalysis?.image_width}x{imageAnalysis?.image_height}px
                             </span>
                           </li>
                           <li className="flex justify-between items-center">
                             <span className="font-medium">Sharpness:</span>
                             <span className="bg-purple-100 text-purple-800 py-0.5 px-2 rounded-full text-xs">
-                              {imageAnalysis.sharpness.toFixed(2)}
+                              {imageAnalysis?.sharpness?.toFixed(2) ?? 'N/A'}
                             </span>
                           </li>
                           <li className="flex justify-between items-center">
                             <span className="font-medium">Quality:</span>
                             <span className="bg-purple-100 text-purple-800 py-0.5 px-2 rounded-full text-xs">
-                              {imageAnalysis.quality}
+                              {imageAnalysis?.quality ?? 'N/A'}
                             </span>
                           </li>
                           <li className="flex justify-between items-center">
                             <span className="font-medium">Processing Time:</span>
                             <span className="bg-purple-100 text-purple-800 py-0.5 px-2 rounded-full text-xs">
-                              {imageAnalysis.processing_time.toFixed(2)}s
+                              {imageAnalysis?.processing_time?.toFixed(2)}s
                             </span>
                           </li>
                         </ul>
                       </div>
 
                       {/* AI Caption */}
-                      {imageAnalysis?.image_caption && (
+                      {imageAnalysis?.caption && (
                         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg shadow">
                           <h5 className="font-semibold text-lg text-yellow-800 mb-2">AI Caption:</h5>
-                          <p className="text-yellow-900 text-sm italic">"{imageAnalysis.image_caption}"</p>
+                          <p className="text-yellow-900 text-sm italic">"{imageAnalysis.caption}"</p>
                         </div>
                       )}
                     </div>

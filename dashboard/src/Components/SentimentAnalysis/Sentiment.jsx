@@ -67,11 +67,34 @@ const SentimentResults = ({ sentimentResults, totalAnalyzed }) => {
     }
   };
 
+  const totalSentiments = Object.values(sentimentResults).reduce((a, b) => a + b, 0);
+  
+  let percentages = Object.entries(sentimentResults).map(([sentiment, count]) => ({
+    sentiment,
+    percentage: (count / totalSentiments) * 100
+  }));
+  
+  percentages.sort((a, b) => b.percentage - a.percentage);
+  
+  let sum = percentages.reduce((acc, { percentage }) => acc + Math.round(percentage), 0);
+  let i = percentages.length - 1;
+  while (sum !== 100 && i >= 0) {
+    if (sum < 100) {
+      percentages[i].percentage += 1;
+      sum += 1;
+    } else {
+      percentages[i].percentage -= 1;
+      sum -= 1;
+    }
+    i = (i - 1 + percentages.length) % percentages.length;
+  }
+
+
   return (
     <Box>
-      <Typography variant="h5" gutterBottom fontWeight="bold">Sentiment Analysis Results</Typography>
-      <Typography variant="body2" gutterBottom>Total tweets analyzed: {totalAnalyzed}</Typography>
-      {Object.entries(sentimentResults).map(([sentiment, percentage]) => (
+       <Typography variant="h5" gutterBottom fontWeight="bold">Sentiment Analysis Results</Typography>
+      <Typography variant="body2" gutterBottom></Typography>
+      {percentages.map(({ sentiment, percentage }) => (
         <Card key={sentiment} sx={{ mb: 2 }}>
           <CardContent>
             <Box display="flex" alignItems="center" mb={1}>
@@ -95,7 +118,7 @@ const SentimentResults = ({ sentimentResults, totalAnalyzed }) => {
                 />
               </Box>
               <Typography variant="body2" fontWeight="bold">
-                {percentage.toFixed(1)}%
+                {Math.round(percentage)}%
               </Typography>
             </Box>
           </CardContent>
